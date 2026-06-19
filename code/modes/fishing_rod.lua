@@ -6,10 +6,10 @@ local mode = skullModes.newMode()
 local model = models.model.Skull_fishing_rod
 mode:setModel(model)
 
-model.game:setScale(0.2, 0.2, 1)
+local fishingGameScale = 0.12
+model.game:setScale(fishingGameScale, fishingGameScale, 1)
+   :setPrimaryRenderType("EMISSIVE_SOLID")
 model.rod:newItem(""):setItem("minecraft:fishing_rod")
-model.game.bg:setPrimaryRenderType("CUTOUT_EMISSIVE_SOLID")
-model.game.cursor:setPrimaryRenderType("CUTOUT_EMISSIVE_SOLID")
 
 local bobberModel = models.model.fishing_bobber
 bobberModel:moveTo(worldModel)
@@ -22,14 +22,37 @@ local bobberVel = vec(0, 0, 0)
 local bobberInWater = false
 
 local fishCatchTick = 0
+local fishingTimer = 0
 
 local fishingGame = false
-local fishingTimer = 0
+local gameCursorSize = 0.25
+local gameCursorY = 0
+local gameCursorYOld = 0
+local gameCursorVel = 0
+local gameFishY = 0
+local gameFishYOld = 0
+local gameProgress = 0
+local gameProgressOld = 0
+local gameProgressVel = 0
+local gameEndDelay = 0
 
 bobberModel.preRender = function()
    if avatarFrame > bobberVisibleFrame then
       bobberModel:setVisible(false)
    end
+end
+
+local function startFishingGame()
+   fishingGame = true
+   gameCursorY = 0.5
+   gameCursorYOld = 0.5
+   gameCursorVel = 0
+   gameFishY = 0.6
+   gameFishYOld = 0.6
+   gameProgress = 0.5
+   gameProgressOld = 0.5
+   gameProgressVel = 0
+   gameEndDelay = 0
 end
 
 function mode.render(delta, block, item, entity, ctx)
@@ -47,7 +70,7 @@ function mode.render(delta, block, item, entity, ctx)
          local isOffHand = viewer:isLeftHanded() ~= utils.contextToLeftHanded[ctx]
          if bobberVisibleFrame > avatarFrame then
             if fishCatchTick > avatarTick then
-               fishingGame = true
+               startFishingGame()
             else
                bobberVisibleFrame = -10
             end
@@ -64,9 +87,18 @@ function mode.render(delta, block, item, entity, ctx)
       end
       if bobberVisibleFrame > avatarFrame then
          bobberVisibleFrame = avatarFrame + 10
-         if fishingGame or true then
+         if fishingGame then
             model.game:setVisible(true)
                :setPos(utils.firstPersonCenterItemOffsets[ctx])
+            local cursorY = math.lerp(gameCursorYOld, gameCursorY, delta)
+            model.game.cursor:setPos(0, cursorY * (1 - gameCursorSize) * 62, 0)
+            local s = gameCursorSize * 62 - 2
+            model.game.cursor.middle:setScale(1, s, 1)
+            model.game.cursor.top:setPos(0, s - 1, 0)
+            model.game.fish:setPos(0, math.lerp(gameFishYOld, gameFishY, delta) * 56, 0)
+            local progress = math.lerp(gameProgressOld, gameProgress, delta)
+            model.game.progress:setScale(1, progress, 1)
+               :setColor(vectors.hsvToRGB(progress * 0.3, 0.75, 1))
          end
       end
       bobberModel:setPos(math.lerp(bobberOldPos, bobberPos, delta) * 16)
@@ -86,12 +118,15 @@ function mode.tick(init)
    if bobberVisibleFrame < avatarFrame then
       return
    end
+   bobberOldPos = bobberPos
+   gameCursorYOld = gameCursorY
+   gameFishYOld = gameFishY
+   gameProgressOld = gameProgress
    local viewer = client.getViewer()
    if (viewer:getPos() - bobberPos):length() > 24 then
       bobberVisibleFrame = -10
       return
    end
-   bobberOldPos = bobberPos
    bobberVel = (bobberVel - vec(0, 0.045, 0)) * 0.92
    for axis = 1, 3 do
       local endPos = bobberPos:copy()
@@ -131,6 +166,45 @@ function mode.tick(init)
          end
       end
       return
+   end
+   -- win or lose
+   if gameEndDelay >= 1 then
+      gameEndDelay = gameEndDelay + 1
+      if gameEndDelay >= 20 then
+         bobberVisibleFrame = -10
+         bobberVisibleFrame = -10
+         host:setActionbar("game finished")
+      end
+      return
+   end
+   -- fish
+   -- vip
+   gameFishY = math.cos(avatarTick * 0.05 + math.sin(avatarTick * 0.07)) * 0.5 + 0.5
+   -- cursor
+   local isClicking = viewer:isSneaking()
+   gameCursorVel = gameCursorVel * 0.95 + (isClicking and 1 or -1) * 0.01
+   gameCursorY = gameCursorY + gameCursorVel
+   for _ = 1, 2 do
+      gameCursorY = 1 - gameCursorY
+      gameCursorVel = -gameCursorVel
+      if gameCursorY < 0 then
+         gameCursorVel = isClicking and 0 or math.abs(gameCursorVel) * 0.8
+         gameCursorY = 0
+      end
+   end
+   -- cursor check
+   local cursorMin = gameCursorY * (1 - gameCursorSize)
+   local cursorMax = cursorMin + gameCursorSize
+   if cursorMin < gameFishY + 0.04 and cursorMax > gameFishY - 0.04 then
+      gameProgressVel = math.lerp(gameProgressVel, 1, 0.6)
+   else
+      gameProgressVel = math.lerp(gameProgressVel, -0.8, 0.3)
+   end
+   -- progress
+   gameProgress = gameProgress + gameProgressVel * 0.01
+   gameProgress = math.clamp(gameProgress, 0, 1)
+   if gameProgress == 1 or gameProgress == 0 then
+      gameEndDelay = 1
    end
 end
 
