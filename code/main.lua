@@ -22,5 +22,8 @@ events.SKULL_RENDER:register(function(delta, block, item, entity, ctx)
    if itemNameLower:find("%a%sfish") then
       return fishMode:setMode(delta, block, item, entity, ctx)
    end
+   if itemNameLower:find("book") then
+      return bookMode:setMode(delta, block, item, entity, ctx)
+   end
    return fishingRodMode:setMode(delta, block, item, entity, ctx)
 end)

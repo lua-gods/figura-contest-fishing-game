@@ -3,15 +3,17 @@ local customItemHelper = require("code.custom_item_helper")
 local utils = require("code.utils")
 local mode = skullModes.newMode()
 
-local model = models.model.Skull_fishing_rod
+local model = models.rod.Skull_fishing_rod
 mode:setModel(model)
 
-local fishingGameScale = 0.12
-model.game:setScale(fishingGameScale, fishingGameScale, 1)
-   :setPrimaryRenderType("EMISSIVE_SOLID")
-model.rod:newItem(""):setItem("minecraft:fishing_rod")
+local mainTexture = textures["texture"]
+model.rod.normal.normal2d:addChild(customItemHelper.makeIcon(mainTexture, vec(0, 16), vec(16, 16)))
+model.rod.used.used2d:addChild(customItemHelper.makeIcon(mainTexture, vec(0, 32), vec(16, 16)))
+model.game:setPrimaryRenderType("EMISSIVE_SOLID")
 
-local bobberModel = models.model.fishing_bobber
+local fishingGameScale = 0.12
+
+local bobberModel = models.rod.fishing_bobber
 bobberModel:moveTo(worldModel)
 bobberModel:setVisible(false)
 
@@ -35,6 +37,8 @@ local gameProgress = 0
 local gameProgressOld = 0
 local gameProgressVel = 0
 local gameEndDelay = 0
+
+local hasFirstPersonMod = client.isModLoaded("firstperson")
 
 bobberModel.preRender = function()
    if avatarFrame > bobberVisibleFrame then
@@ -60,49 +64,73 @@ function mode.render(delta, block, item, entity, ctx)
    local mat, modelType = customItemHelper.getMatrix(entity, ctx, 2)
 
    model.rod:setMatrix(mat)
+   local rodUsed = bobberVisibleFrame > avatarFrame
+   local modelToUse = rodUsed and "used" or "normal"
+   model.rod.normal:setVisible(not rodUsed)
+   model.rod.used:setVisible(rodUsed)
+      :setRot(0, 0, 0)
+   model.rod[modelToUse][modelToUse..'3d']:setVisible(modelType == 3)
+   model.rod[modelToUse][modelToUse..'2d']:setVisible(modelType == 2)
+
    local viewer = client.getViewer()
    if not entity or entity:getUUID() ~= viewer:getUUID() then
       return
    end
 
-   if utils.isFirstPersonContext[ctx] then
-      if viewerClicked then
-         local isOffHand = viewer:isLeftHanded() ~= utils.contextToLeftHanded[ctx]
-         if bobberVisibleFrame > avatarFrame then
+   if viewer:isSwingingArm() then
+      local isLeftHanded = viewer:isLeftHanded()
+      if isLeftHanded ~= utils.contextToLeftHanded[ctx] then
+         local x = viewer:getSwingTime() + delta
+         x = math.clamp(x * 0.2, 0, 1)
+         x = 1 - (1 - x) ^ 2
+         x = 1 - (1 - x * 2) ^ 2
+         model.rod.used:setRot(x * 40 * (isLeftHanded and 1 or -1), 0, x * 70)
+      end
+   end
+   if viewerClicked then
+      if bobberVisibleFrame > avatarFrame then
+         if not fishingGame then
             if fishCatchTick > avatarTick then
                startFishingGame()
-            else
+            elseif avatarTick > fishCatchTick + 20 then
                bobberVisibleFrame = -10
+               sounds:playSound("minecraft:entity.fishing_bobber.retrieve", viewer:getPos(), 0.5, 1)
             end
-         else
-            bobberVisibleFrame = avatarFrame + 10
-            bobberPos = viewer:getPos():add(0, viewer:getEyeHeight())
-            bobberOldPos = bobberPos
-            bobberVel = viewer:getLookDir() * 0.7 + vec(0, 0.2, 0)
-            bobberPos = bobberPos + bobberVel
-            fishingTimer = 0
-            fishingGame = false
          end
-         bobberModel:setVisible(true)
-      end
-      if bobberVisibleFrame > avatarFrame then
+      else
          bobberVisibleFrame = avatarFrame + 10
-         if fishingGame then
-            model.game:setVisible(true)
-               :setPos(utils.firstPersonCenterItemOffsets[ctx])
-            local cursorY = math.lerp(gameCursorYOld, gameCursorY, delta)
-            model.game.cursor:setPos(0, cursorY * (1 - gameCursorSize) * 62, 0)
-            local s = gameCursorSize * 62 - 2
-            model.game.cursor.middle:setScale(1, s, 1)
-            model.game.cursor.top:setPos(0, s - 1, 0)
-            model.game.fish:setPos(0, math.lerp(gameFishYOld, gameFishY, delta) * 56, 0)
-            local progress = math.lerp(gameProgressOld, gameProgress, delta)
-            model.game.progress:setScale(1, progress, 1)
-               :setColor(vectors.hsvToRGB(progress * 0.3, 0.75, 1))
-         end
+         bobberPos = viewer:getPos():add(0, viewer:getEyeHeight())
+         bobberOldPos = bobberPos
+         bobberVel = viewer:getLookDir() * 0.7 + vec(0, 0.2, 0)
+         bobberPos = bobberPos + bobberVel
+         fishingTimer = 0
+         fishingGame = false
+         sounds:playSound("minecraft:entity.fishing_bobber.throw", viewer:getPos(), 0.2, 0.5)
       end
-      bobberModel:setPos(math.lerp(bobberOldPos, bobberPos, delta) * 16)
+      bobberModel:setVisible(true)
    end
+   if bobberVisibleFrame > avatarFrame then
+      bobberVisibleFrame = avatarFrame + 10
+      if fishingGame then
+         local cursorY = math.lerp(gameCursorYOld, gameCursorY, delta)
+         model.game.cursor:setPos(0, cursorY * (1 - gameCursorSize) * 62, 0)
+         local s = gameCursorSize * 62 - 2
+         model.game.cursor.middle:setScale(1, s, 1)
+         model.game.cursor.top:setPos(0, s - 1, 0)
+         model.game.fish:setPos(0, math.lerp(gameFishYOld, gameFishY, delta) * 56, 0)
+         local progress = math.lerp(gameProgressOld, gameProgress, delta)
+         model.game.progress:setScale(1, progress, 1)
+            :setColor(vectors.hsvToRGB(progress * 0.3, 0.75, 1))
+
+         local mat, isFirstPerson = customItemHelper.getCustomGuiMatrix(ctx)
+         if isFirstPerson then
+            mat = mat * matrices.scale4(fishingGameScale, fishingGameScale, 1)
+         end
+         model.game:setVisible(true)
+            :setMatrix(mat)
+      end
+   end
+   bobberModel:setPos(math.lerp(bobberOldPos, bobberPos, delta) * 16)
 end
 
 function mode.tick(init)
@@ -115,6 +143,13 @@ function mode.tick(init)
       bobberInWater = false
       fishingGame = false
    end
+   --[[-- debug
+   fishingGame = true
+   gameProgress = 0.5
+   bobberVisibleFrame = avatarFrame + 100
+   bobberPos = client.getCameraPos() - vec(0, 4, 0)
+   bobberModel:setVisible(true)
+   --]]
    if bobberVisibleFrame < avatarFrame then
       return
    end
@@ -181,7 +216,7 @@ function mode.tick(init)
    -- vip
    gameFishY = math.cos(avatarTick * 0.05 + math.sin(avatarTick * 0.07)) * 0.5 + 0.5
    -- cursor
-   local isClicking = viewer:isSneaking()
+   local isClicking = viewer:isSneaking() or viewer:isSwingingArm() and viewer:getSwingTime() <= 4
    gameCursorVel = gameCursorVel * 0.95 + (isClicking and 1 or -1) * 0.01
    gameCursorY = gameCursorY + gameCursorVel
    for _ = 1, 2 do

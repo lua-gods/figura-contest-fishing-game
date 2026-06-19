@@ -1,3 +1,4 @@
+local utils = require("code.utils")
 local mod = {}
 
 local itemMatrices = {
@@ -31,6 +32,31 @@ local guiMatrix = matrices.mat4()
 guiMatrix:rotate(38, -45, 0)
    :translate(0, 4, 0)
 
+local hudThirdPersonMainMat = matrices.mat4()
+   hudThirdPersonMainMat = hudThirdPersonMainMat * matrices.rotation4(-45, 0, 0)
+   hudThirdPersonMainMat:scale(0.25)
+
+local hudThirdPersonMat = {
+   THIRD_PERSON_LEFT_HAND  = hudThirdPersonMainMat:copy():translate(vec(-10, 10, -18)),
+   THIRD_PERSON_RIGHT_HAND = hudThirdPersonMainMat:copy():translate(vec(10, 10, -18)),
+}
+
+---@param texture Texture
+---@param uv Vector2
+---@param size Vector2
+function mod.makeIcon(texture, uv, size)
+   local model = models:newPart(""):remove()
+   model:newSprite("")
+      :setTexture(texture, texture:getDimensions():unpack())
+      :setUVPixels(uv)
+      :setRegion(size)
+      :setSize(16, 16)
+      :setRenderType("CUTOUT_EMISSIVE_SOLID")
+      :setPos(8, 8)
+
+   return model
+end
+
 ---@param entity Entity
 ---@param ctx Event.SkullRender.context
 ---@param itemType number
@@ -50,6 +76,17 @@ function mod.getMatrix(entity, ctx, itemType)
       end
    end
    return guiMatrix, 2
+end
+
+---@param ctx Event.SkullRender.context
+---@return Matrix4, boolean
+function mod.getCustomGuiMatrix(ctx)
+   if utils.firstPersonCenterItemOffsets[ctx] then
+      return matrices.translate4(utils.firstPersonCenterItemOffsets[ctx]), true
+   end
+   local mat = mod.heldItemMatrices[1][ctx] or matrices.mat4()
+   mat = mat * (hudThirdPersonMat[ctx] or matrices.mat4())
+   return mat, false
 end
 
 return mod
