@@ -38,8 +38,6 @@ local gameProgressOld = 0
 local gameProgressVel = 0
 local gameEndDelay = 0
 
-local hasFirstPersonMod = client.isModLoaded("firstperson")
-
 bobberModel.preRender = function()
    if avatarFrame > bobberVisibleFrame then
       bobberModel:setVisible(false)

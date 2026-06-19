@@ -33,12 +33,12 @@ guiMatrix:rotate(38, -45, 0)
    :translate(0, 4, 0)
 
 local hudThirdPersonMainMat = matrices.mat4()
-   hudThirdPersonMainMat = hudThirdPersonMainMat * matrices.rotation4(-45, 0, 0)
-   hudThirdPersonMainMat:scale(0.25)
+   hudThirdPersonMainMat = hudThirdPersonMainMat * matrices.rotation4(-50, 0, 0)
+   hudThirdPersonMainMat:scale(0.5)
 
 local hudThirdPersonMat = {
-   THIRD_PERSON_LEFT_HAND  = hudThirdPersonMainMat:copy():translate(vec(-10, 10, -18)),
-   THIRD_PERSON_RIGHT_HAND = hudThirdPersonMainMat:copy():translate(vec(10, 10, -18)),
+   THIRD_PERSON_LEFT_HAND  = hudThirdPersonMainMat:copy():translate(vec(-10, 15, -12)),
+   THIRD_PERSON_RIGHT_HAND = hudThirdPersonMainMat:copy():translate(vec(10, 15, -12)),
 }
 
 ---@param texture Texture
