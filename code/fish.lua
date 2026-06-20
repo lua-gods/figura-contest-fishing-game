@@ -122,14 +122,10 @@ function mod.generateFishModel(rawFishName)
 end
 
 ---@param name string
----@return ModelPart, function
+---@return ModelPart
 local function newFishModelTempData(name)
    local model = mod.generateFishModel(name)
-   return model, function()
-      model[1]:remove()
-      model[2]:remove()
-      model[3]:remove()
-   end
+   return model
 end
 
 ---@param name string

@@ -37,7 +37,6 @@ local itemsCount = -1
 ---@return ModelPart
 local function getPage(n)
    if loadedPages[n] then
-      itemsManager.getItemModel(n) -- keep cache alive
       return loadedPages[n]
    end
    local pageModel = modeModel.book.pagesOpen.pages:newPart("")
@@ -63,9 +62,8 @@ local function getPage(n)
       :setPos(-10, -10)
       :addChild(fishModel)
 
-   loadedPages[n] = {model = pageModel, name = fishName}
-
-   return loadedPages[n]
+   loadedPages[n] = pageModel
+   return pageModel
 end
 
 function mode.render(delta, block, item, entity, ctx)
@@ -151,19 +149,19 @@ function mode.render(delta, block, item, entity, ctx)
    if itemsCount ~= #itemsManager.fishedItems then
       itemsCount = #itemsManager.fishedItems
       for _, v in pairs(loadedPages) do
-         v.model:remove()
+         v:remove()
       end
       loadedPages = {}
    end
 
    local pagesN = math.floor(currentPage) * 2 + 1
-   getPage(pagesN)    .model:setRot(0, 10, 0):setVisible(pageTurn < 0.8)
-   getPage(pagesN + 1).model:setRot(0, -90 + pageAngle, 0):setVisible(pageTurn < 0.8)
-   getPage(pagesN + 2).model:setRot(0, 90 + pageAngle, 0):setVisible(pageTurn > 0.2)
-   getPage(pagesN + 3).model:setRot(0, -10, 0):setVisible(pageTurn > 0.2)
+   getPage(pagesN)    :setRot(0, 10, 0):setVisible(pageTurn < 0.8)
+   getPage(pagesN + 1):setRot(0, -90 + pageAngle, 0):setVisible(pageTurn < 0.8)
+   getPage(pagesN + 2):setRot(0, 90 + pageAngle, 0):setVisible(pageTurn > 0.2)
+   getPage(pagesN + 3):setRot(0, -10, 0):setVisible(pageTurn > 0.2)
    for i, v in pairs(loadedPages) do
       if i < pagesN or i > pagesN + 3 then
-         v.model:remove()
+         v:remove()
          loadedPages[i] = nil
       end
    end
