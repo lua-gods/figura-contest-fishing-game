@@ -3,6 +3,7 @@ local utils = require("code.utils")
 local customItemHelper = require("code.custom_item_helper")
 local fishLib = require("code.fish")
 local keybindHelper = require("code.keybind_helper")
+local itemsManager = require("code.items_manager")
 
 local mode = skullModes.newMode()
 
@@ -30,12 +31,16 @@ local oldCurrentPage = 0
 local targetPage = 0
 local loadedPages = {}
 
+local itemsCount = -1
+
 ---@param n number
 ---@return ModelPart
 local function getPage(n)
-   if loadedPages[n] then return loadedPages[n] end
+   if loadedPages[n] then
+      itemsManager.getItemModel(n) -- keep cache alive
+      return loadedPages[n]
+   end
    local pageModel = modeModel.book.pagesOpen.pages:newPart("")
-   loadedPages[n] = pageModel
 
    pageModel:setPos(2, 4, 3)
    local model = pageModel:newPart("")
@@ -44,7 +49,7 @@ local function getPage(n)
    local isRightPage = n % 2 == 0
    model:setPos(isRightPage and 0 or 7, 0, -0.01)
 
-   local fishName = fishLib.makeFishName()
+   local fishName = itemsManager.getItem(n) or "???"
 
    model:newText("")
       :setText(toJson{color = "black", text = fishName})
@@ -53,11 +58,14 @@ local function getPage(n)
       :setWidth(46)
       :setScale(0.75)
 
-   local fishModel = fishLib.generateFishModel(fishName)[2]:copy("")
-   fishModel:setPos(-10, -10, 0)
-   model:addChild(fishModel)
+   local fishModel = itemsManager.getItemModel(n)
+   model:newPart("")
+      :setPos(-10, -10)
+      :addChild(fishModel)
 
-   return pageModel
+   loadedPages[n] = {model = pageModel, name = fishName}
+
+   return loadedPages[n]
 end
 
 function mode.render(delta, block, item, entity, ctx)
@@ -85,11 +93,16 @@ function mode.render(delta, block, item, entity, ctx)
       else
          pos, rot = vec(2, 6, 0), vec(-20, -45, 0)
       end
+   elseif ctx == "HEAD" then
+      pos, rot = vec(1, 6.72, 0), vec(0, 30, 0)
    end
 
    modeModel:setPos(pos)
       :setRot(rot)
 
+   if not utils.isHoldingItemContext[ctx] then
+      return
+   end
    if type(entity) ~= "PlayerAPI" then
       return
    end
@@ -131,18 +144,26 @@ function mode.render(delta, block, item, entity, ctx)
 
    local pageTurn = currentPage % 1
    local x = pageTurn
-   x = x < 0.5 and 4 * x ^ 3 or 1 - (-2 * x + 2) ^ 3 / 2
+   x = 3 * x ^ 2 - 2 * x ^ 3
    local pageAngle = (x - 0.5) * -80 * 2
    modeModel.book.pagesOpen.pageTurn:setRot(0, 0, pageAngle)
 
+   if itemsCount ~= #itemsManager.fishedItems then
+      itemsCount = #itemsManager.fishedItems
+      for _, v in pairs(loadedPages) do
+         v.model:remove()
+      end
+      loadedPages = {}
+   end
+
    local pagesN = math.floor(currentPage) * 2 + 1
-   getPage(pagesN):setRot(0, 10, 0):setVisible(pageTurn < 0.8)
-   getPage(pagesN + 1):setRot(0, -90 + pageAngle, 0):setVisible(pageTurn < 0.8)
-   getPage(pagesN + 2):setRot(0, 90 + pageAngle, 0):setVisible(pageTurn > 0.2)
-   getPage(pagesN + 3):setRot(0, -10, 0):setVisible(pageTurn > 0.2)
+   getPage(pagesN)    .model:setRot(0, 10, 0):setVisible(pageTurn < 0.8)
+   getPage(pagesN + 1).model:setRot(0, -90 + pageAngle, 0):setVisible(pageTurn < 0.8)
+   getPage(pagesN + 2).model:setRot(0, 90 + pageAngle, 0):setVisible(pageTurn > 0.2)
+   getPage(pagesN + 3).model:setRot(0, -10, 0):setVisible(pageTurn > 0.2)
    for i, v in pairs(loadedPages) do
       if i < pagesN or i > pagesN + 3 then
-         v:remove()
+         v.model:remove()
          loadedPages[i] = nil
       end
    end
@@ -150,7 +171,7 @@ end
 
 function mode.tick(init)
    oldCurrentPage = newCurrentPage
-   newCurrentPage = math.lerp(newCurrentPage, targetPage, 0.15)
+   newCurrentPage = math.lerp(newCurrentPage, targetPage, 0.2)
 end
 
 return mode

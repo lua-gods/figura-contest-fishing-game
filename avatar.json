@@ -1,5 +1,7 @@
 {
    "name": "Aquatic",
+   "color": "#59a4d4",
+   "badge_color_donator": "59a4d4",
    "authors": [
       "AuriaFoxGirl"
    ],

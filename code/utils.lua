@@ -70,6 +70,13 @@ mod.isThirdPersonContext = {
    THIRD_PERSON_RIGHT_HAND = true,
 }
 
+mod.isHoldingItemContext = {
+   FIRST_PERSON_LEFT_HAND  = true,
+   FIRST_PERSON_RIGHT_HAND = true,
+   THIRD_PERSON_LEFT_HAND  = true,
+   THIRD_PERSON_RIGHT_HAND = true,
+}
+
 mod.firstPersonCenterItemOffsets = {
    ["FIRST_PERSON_LEFT_HAND"] = vec(-8.96, 16.33, -12.5),
    ["FIRST_PERSON_RIGHT_HAND"] = vec(8.96, 16.33, -12.5),

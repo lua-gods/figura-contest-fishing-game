@@ -1,6 +1,9 @@
 local skullModes = require("code.skull_modes")
 local customItemHelper = require("code.custom_item_helper")
 local utils = require("code.utils")
+local itemsManager = require("code.items_manager")
+local fishLib = require("code.fish")
+
 local mode = skullModes.newMode()
 
 local model = models.rod.Skull_fishing_rod
@@ -8,7 +11,7 @@ mode:setModel(model)
 
 local mainTexture = textures["texture"]
 model.rod.normal.normal2d:addChild(customItemHelper.makeIcon(mainTexture, vec(0, 16), vec(16, 16)))
-model.rod.used.used2d:addChild(customItemHelper.makeIcon(mainTexture, vec(0, 32), vec(16, 16)))
+model.rod.used.used2d:addChild(customItemHelper.makeIcon(mainTexture, vec(16, 16), vec(16, 16)))
 model.game:setPrimaryRenderType("EMISSIVE_SOLID")
 
 local fishingGameScale = 0.12
@@ -37,6 +40,7 @@ local gameProgress = 0
 local gameProgressOld = 0
 local gameProgressVel = 0
 local gameEndDelay = 0
+local gameFishRandom = 0
 
 bobberModel.preRender = function()
    if avatarFrame > bobberVisibleFrame then
@@ -55,6 +59,26 @@ local function startFishingGame()
    gameProgressOld = 0.5
    gameProgressVel = 0
    gameEndDelay = 0
+   if math.random() > 0.95 then
+      gameFishRandom = -1
+   else
+      gameFishRandom = math.random() ^ 2
+   end
+end
+
+local function giveFish()
+   if gameFishRandom == -1 then
+      local ok = itemsManager.addRandomExtraItem()
+      if ok then
+         return
+      end
+      gameFishRandom = 0
+   end
+   local seed = math.floor(gameFishRandom * 1000) / 1000
+   seed = seed + math.random(0, 1)
+   seed = utils.seededRand(seed)
+   local fishName = fishLib.makeFishName(seed)
+   itemsManager.addItem(fishName)
 end
 
 function mode.render(delta, block, item, entity, ctx)
@@ -72,6 +96,9 @@ function mode.render(delta, block, item, entity, ctx)
 
    local viewer = client.getViewer()
    if not entity or entity:getUUID() ~= viewer:getUUID() then
+      return
+   end
+   if not utils.isHoldingItemContext[ctx] then
       return
    end
 
@@ -151,6 +178,12 @@ function mode.tick(init)
    if bobberVisibleFrame < avatarFrame then
       return
    end
+   ---[[-- debug
+   if not fishingGame then
+      startFishingGame()
+      gameProgress = 2
+   end
+   --]]
    bobberOldPos = bobberPos
    gameCursorYOld = gameCursorY
    gameFishYOld = gameFishY
@@ -206,6 +239,9 @@ function mode.tick(init)
       if gameEndDelay >= 20 then
          bobberVisibleFrame = -10
          bobberVisibleFrame = -10
+         if gameProgress > 0.5 then
+            giveFish()
+         end
          host:setActionbar("game finished")
       end
       return
@@ -234,7 +270,7 @@ function mode.tick(init)
       gameProgressVel = math.lerp(gameProgressVel, -0.8, 0.3)
    end
    -- progress
-   gameProgress = gameProgress + gameProgressVel * 0.01
+   gameProgress = gameProgress + gameProgressVel * 0.006
    gameProgress = math.clamp(gameProgress, 0, 1)
    if gameProgress == 1 or gameProgress == 0 then
       gameEndDelay = 1

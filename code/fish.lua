@@ -34,14 +34,18 @@ local default0Mt = {
    __index = function() return 0 end
 }
 
-function mod.makeFishName()
+---@param seed number?
+---@return string
+function mod.makeFishName(seed)
+   seed = seed or math.random()
    local name = ""
    local usedSyllables = setmetatable({}, default0Mt)
    local maxSyllables = #syllablesData
    local hadVowel = false
-   name = name..utils.weightedRandom(namePrefixes, math.random())
-   for _ = 1, math.random(2, math.random(4, 7)) do
-      local rand = math.random(maxSyllables)
+   name = name..utils.weightedRandom(namePrefixes, utils.seededRand(seed + 1))
+   local syllablesCount = utils.seededRandInt(seed + 2, utils.seededRandInt(seed + 3, 4) + 2) + 1
+   for i = 1, syllablesCount do
+      local rand = utils.seededRandInt(seed + 3 + i, maxSyllables)
       for k = 1, maxSyllables do
          local n = (k + rand) % maxSyllables + 1
          local v = syllablesData[n]
