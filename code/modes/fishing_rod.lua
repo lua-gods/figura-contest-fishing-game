@@ -178,7 +178,7 @@ function mode.tick(init)
    if bobberVisibleFrame < avatarFrame then
       return
    end
-   ---[[-- debug
+   --[[-- debug
    if not fishingGame then
       startFishingGame()
       gameProgress = 2
