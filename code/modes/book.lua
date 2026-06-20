@@ -1,11 +1,14 @@
 local skullModes = require("code.skull_modes")
 local utils = require("code.utils")
-local custom_item_helper = require("code.custom_item_helper")
+local customItemHelper = require("code.custom_item_helper")
+local fishLib = require("code.fish")
+local keybindHelper = require("code.keybind_helper")
+
 local mode = skullModes.newMode()
 
-local model = models.book.Skull
-mode:setModel(model)
-model:setPrimaryRenderType("CUTOUT_CULL")
+local modeModel = models.book.Skull
+mode:setModel(modeModel)
+modeModel:setPrimaryRenderType("CUTOUT_CULL")
 
 local bookGuiMatFirst = matrices.mat4()
 bookGuiMatFirst:rotate(-90, 0, 0)
@@ -15,19 +18,57 @@ local bookGuiMatThird = bookGuiMatFirst:copy()
 bookGuiMatThird:scale(2)
    :translate(0, 0, -40)
 
+modeModel.book.pagesOpen.pages:setMatrix(matrices.mat4():rotateZ(90):rotateY(90))
+
+local infoTextTask = modeModel.book:newText("info")
+infoTextTask:setAlignment("CENTER")
+   :setScale(0.1)
+
 local newCurrentPage = 0
 local oldCurrentPage = 0
 local targetPage = 0
 local loadedPages = {}
 
+---@param n number
+---@return ModelPart
+local function getPage(n)
+   if loadedPages[n] then return loadedPages[n] end
+   local pageModel = modeModel.book.pagesOpen.pages:newPart("")
+   loadedPages[n] = pageModel
+
+   pageModel:setPos(2, 4, 3)
+   local model = pageModel:newPart("")
+   model:setScale(0.125)
+
+   local isRightPage = n % 2 == 0
+   model:setPos(isRightPage and 0 or 7, 0, -0.01)
+
+   local fishName = fishLib.makeFishName()
+
+   model:newText("")
+      :setText(toJson{color = "black", text = fishName})
+      :setPos(-20, -2, 0)
+      :setWrap(true)
+      :setWidth(46)
+      :setScale(0.75)
+
+   local fishModel = fishLib.generateFishModel(fishName)[2]:copy("")
+   fishModel:setPos(-10, -10, 0)
+   model:addChild(fishModel)
+
+   return pageModel
+end
+
 function mode.render(delta, block, item, entity, ctx)
-   model.book:setRot(0, 0, 0)
-   model.book.left:setRot(0, 0, 0)
-   model.book.right:setRot(0, 0, 0)
-   model.book.pagesClosed:setVisible(true)
-   model.book.pages:setVisible(false)
+   modeModel.book:setRot(0, 0, 0)
+      :setPos(-1, 0, 0)
+   modeModel.book.left:setRot(0, 0, 0)
+   modeModel.book.right:setRot(0, 0, 0)
+   modeModel.book.pagesClosed:setVisible(true)
+   modeModel.book.pagesOpen:setVisible(false)
+   infoTextTask:setVisible(false)
    if block then
-      model:setPos(0, 0, 0)
+      modeModel:setPos(1, 0, 0)
          :setRot(0, 0, 0)
       return
    end
@@ -45,41 +86,70 @@ function mode.render(delta, block, item, entity, ctx)
       end
    end
 
-   model:setPos(pos)
+   modeModel:setPos(pos)
       :setRot(rot)
 
    if type(entity) ~= "PlayerAPI" then
       return
    end
+   local viewer = client.getViewer()
    local leftHanded = entity:isLeftHanded()
-   if leftHanded == isLeft then
+   local bookClosed = leftHanded == isLeft
+   if viewer:getUUID() == entity:getUUID() then
+      infoTextTask:setVisible(true)
+      infoTextTask:setText(toJson{
+         "Press ",
+         {text = keybindHelper.getVanillaKey("key.swapOffhand"), color = "aqua"},
+         " to ",
+         bookClosed and "open" or "close"
+      })
+      if bookClosed then
+         infoTextTask:rot(90, 0, 0):pos(0, 1, 7)
+      else
+         infoTextTask:rot(90, 0, 90):pos(0, 0.7, -5)
+      end
+   end
+   if bookClosed then
       return
    end
-   local mat, firstPerson = custom_item_helper.getCustomGuiMatrix(ctx)
+   local mat, firstPerson = customItemHelper.getCustomGuiMatrix(ctx)
    mat = mat * (firstPerson and bookGuiMatFirst or bookGuiMatThird)
-   model:setMatrix(mat)
+   modeModel:setMatrix(mat)
 
-   -- currentPage = client.getCameraRot().x * 0.1
-   -- host:setActionbar(currentPage)
    local currentPage = math.lerp(oldCurrentPage, newCurrentPage, delta)
    if viewerClicked then
-      targetPage = targetPage + 1
+      targetPage = targetPage + (viewer:isSneaking() and -1 or 1)
    end
 
-   model.book:setRot(0, 0, -90)
-   model.book.left:setRot(0, 0, -80)
-   model.book.right:setRot(0, 0, 80)
-   model.book.pagesClosed:setVisible(false)
-   model.book.pages:setVisible(true)
+   modeModel.book:setRot(0, 0, -90)
+      :setPos(-1, 0, 0)
+   modeModel.book.left:setRot(0, 0, -80)
+   modeModel.book.right:setRot(0, 0, 80)
+   modeModel.book.pagesClosed:setVisible(false)
+   modeModel.book.pagesOpen:setVisible(true)
 
-   local x = currentPage % 1
+   local pageTurn = currentPage % 1
+   local x = pageTurn
    x = x < 0.5 and 4 * x ^ 3 or 1 - (-2 * x + 2) ^ 3 / 2
-   model.book.pages.pageTurn:setRot(0, 0, (x - 0.5) * -80 * 2)
+   local pageAngle = (x - 0.5) * -80 * 2
+   modeModel.book.pagesOpen.pageTurn:setRot(0, 0, pageAngle)
+
+   local pagesN = math.floor(currentPage) * 2 + 1
+   getPage(pagesN):setRot(0, 10, 0):setVisible(pageTurn < 0.8)
+   getPage(pagesN + 1):setRot(0, -90 + pageAngle, 0):setVisible(pageTurn < 0.8)
+   getPage(pagesN + 2):setRot(0, 90 + pageAngle, 0):setVisible(pageTurn > 0.2)
+   getPage(pagesN + 3):setRot(0, -10, 0):setVisible(pageTurn > 0.2)
+   for i, v in pairs(loadedPages) do
+      if i < pagesN or i > pagesN + 3 then
+         v:remove()
+         loadedPages[i] = nil
+      end
+   end
 end
 
 function mode.tick(init)
    oldCurrentPage = newCurrentPage
-   newCurrentPage = math.lerp(newCurrentPage, targetPage, 0.2)
+   newCurrentPage = math.lerp(newCurrentPage, targetPage, 0.15)
 end
 
 return mode
