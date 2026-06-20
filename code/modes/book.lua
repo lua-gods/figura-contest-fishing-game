@@ -23,6 +23,7 @@ modeModel.book.pagesOpen.pages:setMatrix(matrices.mat4():rotateZ(90):rotateY(90)
 local infoTextTask = modeModel.book:newText("info")
 infoTextTask:setAlignment("CENTER")
    :setScale(0.1)
+   :setOutline(true)
 
 local newCurrentPage = 0
 local oldCurrentPage = 0
