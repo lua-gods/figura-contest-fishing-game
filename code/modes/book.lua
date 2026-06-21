@@ -133,10 +133,11 @@ function mode.render(delta, block, item, entity, ctx)
    local currentPage = math.lerp(oldCurrentPage, newCurrentPage, delta)
    if viewerClicked then
       targetPage = targetPage + (viewer:isSneaking() and -1 or 1)
+      targetPage = math.max(targetPage, 0)
    end
 
    modeModel.book:setRot(0, 0, -90)
-      :setPos(-1, 0, 0)
+      :setPos(-1, 6, 0)
    modeModel.book.left:setRot(0, 0, -80)
    modeModel.book.right:setRot(0, 0, 80)
    modeModel.book.pagesClosed:setVisible(false)
