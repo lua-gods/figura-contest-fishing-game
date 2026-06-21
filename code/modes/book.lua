@@ -52,14 +52,16 @@ local function getPage(n)
 
    model:newText("")
       :setText(toJson{color = "black", text = fishName})
-      :setPos(-20, -2, 0)
+      :setPos(-28, -40, 0)
       :setWrap(true)
-      :setWidth(46)
+      :setWidth(64)
       :setScale(0.75)
+      :alignment("CENTER")
 
    local fishModel = itemsManager.getItemModel(n)
    model:newPart("")
-      :setPos(-10, -10)
+      :setPos(-28, -20)
+      :setScale(2, 2, 1)
       :addChild(fishModel)
 
    loadedPages[n] = pageModel

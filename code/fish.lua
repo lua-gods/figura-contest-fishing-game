@@ -3,8 +3,10 @@ local cache = require("code.cache")
 
 local fishSprite = models.fish.fish_layer
 local fishSpriteFlip = models.fish.fish_layer_flipped
+local fishSpriteOutline = models.fish.fish_layer_outline
 fishSprite:remove()
 fishSpriteFlip:remove()
+fishSpriteOutline:remove()
 
 local mod = {}
 
@@ -75,6 +77,7 @@ function mod.generateFishModel(rawFishName)
 
    local model = models:newPart(""):remove()
    local modelFlip = models:newPart(""):remove()
+   local modelOutline = models:newPart(""):remove()
    local seed = utils.hashString(fishName)
 
    local layerCount = utils.seededRandInt(seed + 1, 3)
@@ -91,13 +94,15 @@ function mod.generateFishModel(rawFishName)
 
    for i = 0, layerCount do
       local layerY = i - 1
+      local k = i
       if i == 0 then
          layerY = 2 + utils.seededRandInt(seed + 4, 2)
+         k = 0.5
       elseif layerCount == 2 and i == 2 then
          layerY = utils.seededRandInt(seed + 2, 2)
       end
       local color = colors[i] or colors[1]
-      local pos = vec(0, 0, -i * 0.01)
+      local pos = vec(0, 0, -k * 0.01)
       local uv = vec(fishStyle, layerY) * 16
       local sprite = fishSprite:copy("")
       model:addChild(sprite)
@@ -109,7 +114,18 @@ function mod.generateFishModel(rawFishName)
       spriteFlip:setPos(-pos)
          :setUVPixels(uv)
          :color(color)
+      if i == 0 then
+         local outline = fishSprite:copy("")
+         modelOutline:addChild(outline)
+         outline:setPos(0, 0, 0.006)
+            :setUVPixels(uv + vec(0, 32))
+      end
    end
+
+   local mainOutline = fishSpriteOutline:copy("")
+   modelOutline:addChild(mainOutline)
+   mainOutline:setPos(0, 0, 0.005)
+      :setUVPixels(0, fishStyle * 18)
 
    local hudModel = model:copy("")
    hudModel:setPrimaryRenderType("CUTOUT_EMISSIVE_SOLID")
@@ -118,7 +134,9 @@ function mod.generateFishModel(rawFishName)
    model3d:addChild(model)
    model3d:addChild(modelFlip)
 
-   return {model, hudModel, model3d}
+   modelOutline:addChild(model)
+
+   return {model, hudModel, model3d, modelOutline}
 end
 
 ---@param name string
@@ -134,6 +152,7 @@ function mod.getFishModel(name)
    return cache.get(name, newFishModelTempData)
 end
 
+--[=[ -- debug
 local fishName = mod.makeFishName()
 -- fishName = "papa fish"
 -- fishName = "papa fish"
@@ -141,13 +160,14 @@ local fishName = mod.makeFishName()
 models:newPart("", "Hud")
    :setLight(15, 15)
    :setScale(4, 4)
-   :setPos(vec(-8, -8, 0) * 4)
-   :addChild(mod.generateFishModel(fishName)[2])--:setPos(-16, -16))
+   :setPos(vec(-9, -9, 0) * 4)
+   :addChild(mod.generateFishModel(fishName)[4])--:setPos(-16, -16))
    :newText("a")
    :setText(fishName)
    :setPos(7, -9)
    -- :setPos(-0.5, -16.5, 0)
    :setScale(1 / 2)
    :setOutline(true)
+--]=]
 
 return mod

@@ -64,7 +64,7 @@ function mod.getItemModel(n)
    if extraModels[str] then
       return extraModels[str]
    end
-   return fishLib.getFishModel(str)[2]
+   return fishLib.getFishModel(str)[4]
 end
 
 return mod
