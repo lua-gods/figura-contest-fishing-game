@@ -101,7 +101,6 @@ local function generateColors(seed, hue, hueStrength, name)
       utils.seededRand(seed),
       utils.seededRand(seed + 3)
    )
-   hueStrength = 0
    hue = math.lerp(
       customHue,
       hue,
@@ -131,8 +130,8 @@ function mod.generateFishModel(rawFishName)
 
    if fishName:sub(1, 7) == "golden " then
       fishName = fishName:sub(8, -1)
-      hue = 0.12
-      hueStrength = 0.95
+      hue = 0.11
+      hueStrength = 0.98
    end
 
    local model = models:newPart(""):remove()
