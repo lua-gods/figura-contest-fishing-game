@@ -2,6 +2,8 @@ local fishingRodMode = require("code.modes.fishing_rod")
 local bookMode = require("code.modes.book")
 local fishMode = require("code.modes.fish")
 
+local fishLib = require("code.fish")
+
 local canGlobalSkullRender = false
 function events.world_render()
    canGlobalSkullRender = true
@@ -19,7 +21,7 @@ events.SKULL_RENDER:register(function(delta, block, item, entity, ctx)
    end
    local itemName = item:getName()
    local itemNameLower = itemName:lower()
-   if itemNameLower:find("%a%sfish") then
+   if fishLib.isFish(itemNameLower) then
       return fishMode:setMode(delta, block, item, entity, ctx)
    end
    if itemNameLower:find("book") then

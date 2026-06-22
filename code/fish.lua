@@ -45,10 +45,23 @@ local default0Mt = {
 
 local extraFish = {
    [3] = {
-      {value = "", weight = 200},
+      {value = "", weight = 150},
       {value = "labubu", weight = 1}
    }
 }
+
+local fishStyles = {
+   {name = "fish", style = {0, 1, 2, 4, 5}},
+   {name = "octopus", style = {6}},
+   {name = "pufferfish", style = {3}},
+}
+local fishStylesLookup = {}
+local fishSuffixesWeights = {}
+
+for i, v in pairs(fishStyles) do
+   fishSuffixesWeights[i] = {value = v.name, weight = #v.style}
+   fishStylesLookup[v.name] = v.style
+end
 
 ---@param seed number?
 ---@return string
@@ -58,12 +71,15 @@ function mod.makeFishName(seed)
    local usedSyllables = setmetatable({}, default0Mt)
    local maxSyllables = #syllablesData
    local hadVowel = false
+
    name = name..utils.weightedRandom(namePrefixes, utils.seededRand(seed + 1))
+   suffix = " "..utils.weightedRandom(fishSuffixesWeights, utils.seededRand(seed + 4))
+
    local syllablesCount = utils.seededRandInt(seed + 2, utils.seededRandInt(seed + 3, 4) + 2) + 1
    if extraFish[syllablesCount] then
       local customName = utils.weightedRandom(extraFish[syllablesCount], utils.seededRand(seed + 5))
       if customName ~= "" then
-         return name..customName.." fish"
+         return name..customName..suffix
       end
    end
    for i = 1, syllablesCount do
@@ -79,7 +95,7 @@ function mod.makeFishName(seed)
          end
       end
    end
-   return name.." fish"
+   return name..suffix
 end
 
 ---@param seed number
@@ -112,10 +128,14 @@ local function generateColors(seed, hue, hueStrength, name)
    end
    k = 0
    for i = 1, 3 do
+      local sat = utils.seededRand(seed + 6 + i * 20) ^ 2 * 0.7
+      local val = utils.seededRand(seed + 7 + i * 20) * 0.7 + 0.3
+      sat = math.lerp(sat, 1, hueStrength * 0.8 * (1 - val ^ 2))
+      val = math.lerp(val, 1, hueStrength * 0.9)
       colors[i] = vectors.hsvToRGB(
          hue + (i - 1) * k,
-         utils.seededRand(seed + 6 + i * 20) ^ 2 * 0.7,
-         utils.seededRand(seed + 7 + i * 20) * 0.7 + 0.3
+         sat,
+         val
       )
    end
    return colors
@@ -124,7 +144,9 @@ end
 ---@param rawFishName string
 ---@return ModelPart[]
 function mod.generateFishModel(rawFishName)
-   local fishName = rawFishName
+   local fishName, suffix = rawFishName:match('^(.-)%s+(%w+)$')
+   fishName = fishName or ""
+   suffix = suffix or "fish"
    local hue = 0
    local hueStrength = 0
 
@@ -139,8 +161,13 @@ function mod.generateFishModel(rawFishName)
    local modelOutline = models:newPart(""):remove()
    local seed = utils.hashString(fishName)
 
+   local myFishStyles = fishStylesLookup[suffix] or fishStylesLookup.fish
    local layerCount = utils.seededRandInt(seed + 1, 3)
-   local fishStyle = utils.seededRandInt(seed + 3, 3) - 1
+   local fishStyle = myFishStyles[utils.seededRandInt(seed + 3, #myFishStyles)]
+
+   if fishStyle == 3 then
+      layerCount = 3
+   end
 
    local colors = generateColors(-seed, hue, hueStrength, fishName)
 
@@ -204,7 +231,16 @@ function mod.getFishModel(name)
    return cache.get(name, newFishModelTempData)
 end
 
---[=[ -- debug
+---@param name string
+---@return boolean
+function mod.isFish(name)
+   if fishStylesLookup[name:match("%a%s+(%w+)%s*$")] then
+      return true
+   end
+   return false
+end
+
+---[=[ -- debug
 local fishName = mod.makeFishName()
 -- fishName = "papa fish"
 -- fishName = "papa fish"
