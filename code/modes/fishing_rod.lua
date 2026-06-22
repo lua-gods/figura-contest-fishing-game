@@ -83,6 +83,19 @@ local function giveFish()
    end
    local seed = math.floor(gameFishRandom * 1000) / 1000
    seed = seed + math.random(0, 1)
+
+   local waterDepth = 1
+   for _ = 1, 4 do
+      if not utils.isWater(world.getBlockState(bobberPos - vec(0, waterDepth, 0))) then
+         break
+      end
+      waterDepth = waterDepth + 1
+   end
+
+   seed = seed + (world.getSkyLightLevel(bobberPos) >= 1 and 2 or 0)
+   seed = seed + (world.getBiome(bobberPos).id:find("warm") and 4 or 0)
+   seed = seed + (waterDepth == 5 and 8 or 0)
+
    seed = utils.seededRand(seed)
    local fishName = fishLib.makeFishName(seed)
    itemsManager.addItem(fishName)
@@ -228,7 +241,7 @@ function mode.tick(init)
    if not bobberVisible then
       return
    end
-   --[[-- debug
+   ---[[-- debug
    if not fishingGame then
       startFishingGame()
       gameProgress = 2
