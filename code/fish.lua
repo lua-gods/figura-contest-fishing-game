@@ -238,7 +238,7 @@ function mod.isFish(name)
    return false
 end
 
----[=[ -- debug
+--[=[ -- debug
 for x = 0, 5 do
    for y = 0, 3 do
       local fishName = mod.makeFishName()
