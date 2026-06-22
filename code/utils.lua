@@ -88,4 +88,20 @@ function mod.isWater(block)
    return block.id == "minecraft:water" or block:getFluidTags()[1] == "minecraft:water"
 end
 
+---@param delta number?
+function mod.skullCenterToWorldMat(delta)
+   local camRot = client.getViewer():getRot(delta or 1)
+   local camPos = client.getCameraPos()
+
+   local fov = math.tan(math.rad(client.getFOV() / 2)) * 2
+   local mat = matrices.mat4()
+   mat:translate(-camPos * 16)
+   mat:rotateY(camRot.y)
+   :rotateX(-camRot.x)
+
+   local scale = 1 / fov * 0.933
+   mat:scale(scale, scale, 0.7)
+   return mat
+end
+
 return mod

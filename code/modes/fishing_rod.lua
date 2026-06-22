@@ -20,6 +20,8 @@ local bobberModel = models.rod.fishing_bobber
 bobberModel:moveTo(worldModel)
 bobberModel:setVisible(false)
 
+local stringModel = bobberModel.bobber_string
+
 local bobberVisibleFrame = -10
 local bobberPos = vec(0, 0, 0)
 local bobberOldPos = vec(0, 0, 0)
@@ -134,28 +136,62 @@ function mode.render(delta, block, item, entity, ctx)
       end
       bobberModel:setVisible(true)
    end
-   if bobberVisibleFrame > avatarFrame then
-      bobberVisibleFrame = avatarFrame + 10
-      if fishingGame then
-         local cursorY = math.lerp(gameCursorYOld, gameCursorY, delta)
-         model.game.cursor:setPos(0, cursorY * (1 - gameCursorSize) * 62, 0)
-         local s = gameCursorSize * 62 - 2
-         model.game.cursor.middle:setScale(1, s, 1)
-         model.game.cursor.top:setPos(0, s - 1, 0)
-         model.game.fish:setPos(0, math.lerp(gameFishYOld, gameFishY, delta) * 56, 0)
-         local progress = math.lerp(gameProgressOld, gameProgress, delta)
-         model.game.progress:setScale(1, progress, 1)
-            :setColor(vectors.hsvToRGB(progress * 0.3, 0.75, 1))
-
-         local mat, isFirstPerson = customItemHelper.getCustomGuiMatrix(ctx)
-         if isFirstPerson then
-            mat = mat * matrices.scale4(fishingGameScale, fishingGameScale, 1)
-         end
-         model.game:setVisible(true)
-            :setMatrix(mat)
-      end
+   if bobberVisibleFrame <= avatarFrame then
+      return
    end
-   bobberModel:setPos(math.lerp(bobberOldPos, bobberPos, delta) * 16)
+   bobberVisibleFrame = avatarFrame + 10
+   local bobberPos2 = math.lerp(bobberOldPos, bobberPos, delta) * 16
+   bobberModel:setPos(bobberPos2)
+   if fishingGame then
+      local cursorY = math.lerp(gameCursorYOld, gameCursorY, delta)
+      model.game.cursor:setPos(0, cursorY * (1 - gameCursorSize) * 62, 0)
+      local s = gameCursorSize * 62 - 2
+      model.game.cursor.middle:setScale(1, s, 1)
+      model.game.cursor.top:setPos(0, s - 1, 0)
+      model.game.fish:setPos(0, math.lerp(gameFishYOld, gameFishY, delta) * 56, 0)
+      local progress = math.lerp(gameProgressOld, gameProgress, delta)
+      model.game.progress:setScale(1, progress, 1)
+         :setColor(vectors.hsvToRGB(progress * 0.3, 0.75, 1))
+
+      local mat, isFirstPerson = customItemHelper.getCustomGuiMatrix(ctx)
+      if isFirstPerson then
+         mat = mat * matrices.scale4(fishingGameScale, fishingGameScale, 1)
+      end
+      model.game:setVisible(true)
+         :setMatrix(mat)
+   end
+   local isLeft = utils.contextToLeftHanded[ctx]
+   local pos
+   if utils.isFirstPersonContext[ctx] then
+      local mat = utils.skullCenterToWorldMat(delta)
+      local mat2 = mat:inverted()
+
+      local offset = vec(0.5, 13.5, 1)
+      if isLeft then
+         offset.x = -offset.x
+      end
+      pos = mat2:apply(-utils.firstPersonCenterItemOffsets[ctx] + offset)
+   elseif utils.isThirdPersonContext[ctx] then
+      pos = viewer:getPos(delta) * 16
+      local offset = vec(-5, 14, 15)
+      if isLeft then
+         offset.x = -offset.x
+      end
+      offset = vectors.rotateAroundAxis(-viewer:getBodyYaw(delta), offset, vec(0, 1, 0))
+      pos = pos + offset
+   end
+   if pos then
+      pos = pos - bobberPos2
+
+      local yaw = 90 - math.deg(math.atan2(pos.z, pos.x))
+      local pitch = math.deg(math.atan2(pos.xz:length(), pos.y))
+
+      stringModel:setVisible(true)
+         :setRot(pitch, yaw, 0)
+         :setScale(1, pos:length(), 1)
+   else
+      stringModel:setVisible(false)
+   end
 end
 
 function mode.tick(init)

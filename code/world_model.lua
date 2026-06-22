@@ -71,18 +71,7 @@ events.SKULL_RENDER:register(function(delta, block, item, entity, ctx)
             skullModel:setPos(utils.firstPersonCenterItemOffsets[ctx])
             :rot()
             skullModel:visible(true)
-            local camRot = client.getViewer():getRot(delta)
-            local camPos = client.getCameraPos()
-
-            local fov = math.tan(math.rad(client.getFOV() / 2)) * 2
-            local mat = matrices.mat4()
-            mat:translate(-camPos * 16)
-            mat:rotateY(camRot.y)
-            :rotateX(-camRot.x)
-
-            local scale = 1 / fov * 0.933
-            mat:scale(scale, scale, 0.7)
-            skullModel2:setMatrix(mat)
+            skullModel2:setMatrix(utils.skullCenterToWorldMat(delta))
          end
       end
    end
