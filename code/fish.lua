@@ -27,13 +27,6 @@ for i, v in ipairs(syllablesData) do
    syllablesLookup[v.text] = v
 end
 
-local letterColors = {
-   b = 0.52,
-   v = 0.8,
-   l = 0.25,
-   sh = 0.1
-}
-
 local namePrefixes = {
    {value = "", weight = 35},
    {value = "golden ", weight = 1},
@@ -98,38 +91,40 @@ function mod.makeFishName(seed)
    return name..suffix
 end
 
+---@type fun(colors: Vector3[], seed: number)[]
+local fishStylesColors = {
+   [3] = function(colors, seed)
+      local rand = utils.seededRand(seed + 9)
+      colors[2] = math.lerp(colors[1], vec(1, 1, 1), rand * 0.5) --[[@as Vector3]]
+   end,
+}
+
 ---@param seed number
 ---@param hue number
 ---@param hueStrength number
 ---@param name string
+---@param style number
 ---@return Vector3[]
-local function generateColors(seed, hue, hueStrength, name)
+local function generateColors(seed, hue, hueStrength, name, style)
    local colors = {}
-   local customHue = 0
-   local hueSum = 0.0001
-   for i, v in pairs(letterColors) do
-      local _, c = name:gsub(i, i)
-      customHue = customHue + v * c
-      hueSum = hueSum + c
-   end
-   customHue = math.lerp(
-      customHue / hueSum,
-      utils.seededRand(seed),
-      utils.seededRand(seed + 3)
-   )
    hue = math.lerp(
-      customHue,
+      utils.seededRand(seed),
       hue,
       hueStrength
    )
-   local k = (utils.seededRand(seed + 1) - 0.5) * 0.2 * (1 - hueStrength)
-   if utils.seededRand(seed + 2) > 0.7 then
-      k = k + 0.333
+   local k = (utils.seededRand(seed + 1) - 0.5) * 0.1 * (1 - hueStrength)
+   if utils.seededRand(seed + 2) > 0.8 and hueStrength < 0.5 then
+      k = k + 0.5
+      hueStrength = 1
    end
-   k = 0
+   if utils.seededRand(seed + 4) > 0.9 then
+      hueStrength = 1
+   end
    for i = 1, 3 do
-      local sat = utils.seededRand(seed + 6 + i * 20) ^ 2 * 0.7
-      local val = utils.seededRand(seed + 7 + i * 20) * 0.7 + 0.3
+      local sat = utils.seededRand(seed + 6 + i * 20) ^ 2 * 0.9
+      local val = utils.seededRand(seed + 7 + i * 20)
+      val = 1 - (1 - val) ^ 2
+      val = val * 0.5 + 0.5
       sat = math.lerp(sat, 1, hueStrength * 0.8 * (1 - val ^ 2))
       val = math.lerp(val, 1, hueStrength * 0.9)
       colors[i] = vectors.hsvToRGB(
@@ -137,6 +132,9 @@ local function generateColors(seed, hue, hueStrength, name)
          sat,
          val
       )
+   end
+   if fishStylesColors[style] then
+      fishStylesColors[style](colors, seed)
    end
    return colors
 end
@@ -169,7 +167,7 @@ function mod.generateFishModel(rawFishName)
       layerCount = 3
    end
 
-   local colors = generateColors(-seed, hue, hueStrength, fishName)
+   local colors = generateColors(-seed, hue, hueStrength, fishName, fishStyle)
 
    for i = 0, layerCount do
       local layerY = i - 1
@@ -241,21 +239,24 @@ function mod.isFish(name)
 end
 
 ---[=[ -- debug
-local fishName = mod.makeFishName()
--- fishName = "papa fish"
--- fishName = "papa fish"
+for x = 0, 5 do
+   for y = 0, 3 do
+      local fishName = mod.makeFishName()
+      models:newPart("", "Hud")
 
-models:newPart("", "Hud")
-   :setLight(15, 15)
-   :setScale(4, 4)
-   :setPos(vec(-10, -10, 0) * 4)
-   :addChild(mod.generateFishModel(fishName)[4])--:setPos(-16, -16))
-   :newText("a")
-   :setText(fishName)
-   :setPos(7, -10)
-   -- :setPos(-0.5, -16.5, 0)
-   :setScale(1 / 2)
-   :setOutline(true)
+      :setLight(15, 15)
+      :setScale(3, 3)
+      :setPos(vec(-10, -10, 0) * 3 - vec(x * 60, y * 80, 0))
+      :addChild(mod.generateFishModel(fishName)[4])--:setPos(-16, -16))
+      :newText("a")
+      :setText(fishName)
+      :setPos(8, -10)
+      :setScale(0.25)
+      :wrap(true)
+      :width(64)
+      :setOutline(true)
+   end
+end
 --]=]
 
 return mod
