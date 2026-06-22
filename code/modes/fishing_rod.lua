@@ -12,7 +12,6 @@ mode:setModel(model)
 local mainTexture = textures["texture"]
 model.rod.normal.normal2d:addChild(customItemHelper.makeIcon(mainTexture, vec(0, 16), vec(16, 16)))
 model.rod.used.used2d:addChild(customItemHelper.makeIcon(mainTexture, vec(16, 16), vec(16, 16)))
-model.game:setPrimaryRenderType("EMISSIVE_SOLID")
 
 local fishingGameScale = 0.12
 
@@ -21,6 +20,9 @@ bobberModel:moveTo(worldModel)
 bobberModel:setVisible(false)
 
 local stringModel = bobberModel.bobber_string
+
+local gameModel = model.game_main
+gameModel:setPrimaryRenderType("EMISSIVE_SOLID")
 
 local bobberVisibleFrame = -10
 local bobberPos = vec(0, 0, 0)
@@ -43,6 +45,9 @@ local gameProgressOld = 0
 local gameProgressVel = 0
 local gameEndDelay = 0
 local gameFishRandom = 0
+
+local fishingGameAnimNew = 0
+local fishingGameAnimOld = 0
 
 bobberModel.preRender = function()
    if avatarFrame > bobberVisibleFrame then
@@ -84,7 +89,7 @@ local function giveFish()
 end
 
 function mode.render(delta, block, item, entity, ctx)
-   model.game:setVisible(false)
+   gameModel:setVisible(false)
    local mat, modelType = customItemHelper.getMatrix(entity, ctx, 2)
 
    model.rod:setMatrix(mat)
@@ -121,7 +126,7 @@ function mode.render(delta, block, item, entity, ctx)
                startFishingGame()
             elseif avatarTick > fishCatchTick + 20 then
                bobberVisibleFrame = -10
-               sounds:playSound("minecraft:entity.fishing_bobber.retrieve", viewer:getPos(), 0.5, 1)
+               sounds:playSound("minecraft:entity.fishing_bobber.retrieve", viewer:getPos(), 1, 0.8 + math.random() * 0.4)
             end
          end
       else
@@ -132,9 +137,29 @@ function mode.render(delta, block, item, entity, ctx)
          bobberPos = bobberPos + bobberVel
          fishingTimer = 0
          fishingGame = false
-         sounds:playSound("minecraft:entity.fishing_bobber.throw", viewer:getPos(), 0.2, 0.5)
+         sounds:playSound("minecraft:entity.fishing_bobber.throw", viewer:getPos(), 0.5, 0.33 + math.random() * 0.2)
       end
       bobberModel:setVisible(true)
+   end
+   local fishingGameAnim = math.lerp(fishingGameAnimOld, fishingGameAnimNew, delta)
+   if fishingGameAnim > 0.01 then
+      local cursorY = math.lerp(gameCursorYOld, gameCursorY, delta)
+      gameModel.game.cursor:setPos(0, cursorY * (1 - gameCursorSize) * 62, 0)
+      local s = gameCursorSize * 62 - 2
+      gameModel.game.cursor.middle:setScale(1, s, 1)
+      gameModel.game.cursor.top:setPos(0, s - 1, 0)
+      gameModel.game.fish:setPos(0, math.lerp(gameFishYOld, gameFishY, delta) * 56, 0)
+      local progress = math.lerp(gameProgressOld, gameProgress, delta)
+      gameModel.game.progress:setScale(1, progress, 1)
+         :setColor(vectors.hsvToRGB(progress * 0.3, 0.75, 1))
+
+      local mat, isFirstPerson = customItemHelper.getCustomGuiMatrix(ctx)
+      if isFirstPerson then
+         mat = mat * matrices.scale4(fishingGameScale, fishingGameScale, 1)
+      end
+      gameModel.game:setScale(1 - (1 - fishingGameAnim) ^ 3, 1, 1)
+      gameModel:setVisible(true)
+         :setMatrix(mat)
    end
    if bobberVisibleFrame <= avatarFrame then
       return
@@ -142,24 +167,6 @@ function mode.render(delta, block, item, entity, ctx)
    bobberVisibleFrame = avatarFrame + 10
    local bobberPos2 = math.lerp(bobberOldPos, bobberPos, delta) * 16
    bobberModel:setPos(bobberPos2)
-   if fishingGame then
-      local cursorY = math.lerp(gameCursorYOld, gameCursorY, delta)
-      model.game.cursor:setPos(0, cursorY * (1 - gameCursorSize) * 62, 0)
-      local s = gameCursorSize * 62 - 2
-      model.game.cursor.middle:setScale(1, s, 1)
-      model.game.cursor.top:setPos(0, s - 1, 0)
-      model.game.fish:setPos(0, math.lerp(gameFishYOld, gameFishY, delta) * 56, 0)
-      local progress = math.lerp(gameProgressOld, gameProgress, delta)
-      model.game.progress:setScale(1, progress, 1)
-         :setColor(vectors.hsvToRGB(progress * 0.3, 0.75, 1))
-
-      local mat, isFirstPerson = customItemHelper.getCustomGuiMatrix(ctx)
-      if isFirstPerson then
-         mat = mat * matrices.scale4(fishingGameScale, fishingGameScale, 1)
-      end
-      model.game:setVisible(true)
-         :setMatrix(mat)
-   end
    local isLeft = utils.contextToLeftHanded[ctx]
    local pos
    if utils.isFirstPersonContext[ctx] then
@@ -211,7 +218,14 @@ function mode.tick(init)
    bobberPos = client.getCameraPos() - vec(0, 4, 0)
    bobberModel:setVisible(true)
    --]]
-   if bobberVisibleFrame < avatarFrame then
+   local bobberVisible = bobberVisibleFrame >= avatarFrame
+   fishingGameAnimOld = fishingGameAnimNew
+   fishingGameAnimNew = fishingGameAnimNew + (bobberVisible and fishingGame and 1 or -1) * 0.1
+   fishingGameAnimNew = math.clamp(fishingGameAnimNew, 0, 1)
+   gameCursorYOld = gameCursorY
+   gameFishYOld = gameFishY
+   gameProgressOld = gameProgress
+   if not bobberVisible then
       return
    end
    --[[-- debug
@@ -221,9 +235,6 @@ function mode.tick(init)
    end
    --]]
    bobberOldPos = bobberPos
-   gameCursorYOld = gameCursorY
-   gameFishYOld = gameFishY
-   gameProgressOld = gameProgress
    local viewer = client.getViewer()
    if (viewer:getPos() - bobberPos):length() > 24 then
       bobberVisibleFrame = -10
@@ -255,13 +266,17 @@ function mode.tick(init)
    if bobberInWater then
       fishingTimer = fishingTimer + 1
    else
-      fishingTimer = fishingTimer * 0.5
+      fishingTimer = math.floor(fishingTimer * 0.5)
+   end
+   if fishingTimer > 5 and fishingTimer % 10 == 0 and math.random() > 0.8 then
+      sounds:playSound("minecraft:entity.generic.splash", bobberPos, 0.1, 0.4)
    end
    if not fishingGame then
       if bobberInWater and fishingTimer > 120 and math.random() > 0.99 then
          bobberVel = bobberVel - vec(0, 0.15, 0)
          fishCatchTick = avatarTick + 20
          fishingTimer = 60
+         sounds:playSound("minecraft:entity.fishing_bobber.splash", bobberPos, 0.25, math.random() * 0.8 + 0.6)
          for _ = 1, 16 do
             particles:newParticle("minecraft:bubble", bobberPos + (vec(math.random(), 0.5, math.random()) - 0.5) * 1.2)
             particles:newParticle("minecraft:splash", bobberPos + (vec(math.random(), 0.5, math.random()) - 0.5) * 1.2)
@@ -275,10 +290,10 @@ function mode.tick(init)
       if gameEndDelay >= 20 then
          bobberVisibleFrame = -10
          bobberVisibleFrame = -10
+         sounds:playSound("minecraft:entity.fishing_bobber.retrieve", viewer:getPos(), 1, 0.8 + math.random() * 0.4)
          if gameProgress > 0.5 then
             giveFish()
          end
-         host:setActionbar("game finished")
       end
       return
    end
