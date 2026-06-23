@@ -45,6 +45,8 @@ local gameProgressOld = 0
 local gameProgressVel = 0
 local gameEndDelay = 0
 local gameFishRandom = 0
+local gameFishYVel = 0
+local gameFishYTarget = 0
 
 local fishingGameAnimNew = 0
 local fishingGameAnimOld = 0
@@ -66,6 +68,8 @@ local function startFishingGame()
    gameProgressOld = 0.5
    gameProgressVel = 0
    gameEndDelay = 0
+   gameFishYVel = 0
+   gameFishYTarget = 0.8
    if math.random() > 0.95 then
       gameFishRandom = -1
    else
@@ -81,7 +85,7 @@ local function giveFish()
       end
       gameFishRandom = 0
    end
-   local seed = math.floor(gameFishRandom * 1000) / 1000
+   local seed = gameFishRandom ^ 2
    seed = seed + math.random(0, 1)
 
    local waterDepth = 1
@@ -214,6 +218,13 @@ function mode.render(delta, block, item, entity, ctx)
    end
 end
 
+---@return boolean
+local function isCursorToucingFish()
+   local cursorMin = gameCursorY * (1 - gameCursorSize)
+   local cursorMax = cursorMin + gameCursorSize
+   return cursorMin < gameFishY + 0.04 and cursorMax > gameFishY - 0.04
+end
+
 function mode.tick(init)
    if init then
       bobberVisibleFrame = -10
@@ -244,7 +255,7 @@ function mode.tick(init)
    --[[-- debug
    if not fishingGame then
       startFishingGame()
-      gameProgress = 2
+      -- gameProgress = 2
    end
    --]]
    bobberOldPos = bobberPos
@@ -289,7 +300,7 @@ function mode.tick(init)
          bobberVel = bobberVel - vec(0, 0.15, 0)
          fishCatchTick = avatarTick + 20
          fishingTimer = 60
-         sounds:playSound("minecraft:entity.fishing_bobber.splash", bobberPos, 0.25, math.random() * 0.8 + 0.6)
+         sounds:playSound("minecraft:entity.fishing_bobber.splash", bobberPos, 0.5, math.random() * 0.8 + 0.6)
          for _ = 1, 16 do
             particles:newParticle("minecraft:bubble", bobberPos + (vec(math.random(), 0.5, math.random()) - 0.5) * 1.2)
             particles:newParticle("minecraft:splash", bobberPos + (vec(math.random(), 0.5, math.random()) - 0.5) * 1.2)
@@ -310,12 +321,32 @@ function mode.tick(init)
       end
       return
    end
+   --
+   if avatarTick % 10 == 0 then
+      sounds:playSound("minecraft:entity.fishing_bobber.retrieve", bobberPos, 0.1, 0.1 + math.random() * 0.2)
+   end
    -- fish
-   -- vip
-   gameFishY = math.cos(avatarTick * 0.05 + math.sin(avatarTick * 0.07)) * 0.5 + 0.5
+   if math.random() > (isCursorToucingFish() and 0.7 or 0.95) then
+      local offset = (math.random() - 0.5) * 2
+      offset = math.sign(offset) * offset ^ 2
+      if math.random() > 0.9 then
+         offset = offset * 0.5
+      else
+         offset = offset * 0.1
+      end
+      gameFishYTarget = gameFishYTarget + offset
+   end
+   gameFishYTarget = gameFishYTarget + (math.random() - 0.5) * 0.025
+   gameFishYTarget = gameFishYTarget % 2
+   if gameFishYTarget > 1 then
+      gameFishYTarget = 2 - gameFishYTarget
+   end
+   gameFishYVel = math.lerp(gameFishYVel, gameFishYTarget - gameFishY, 0.1)
+   gameFishY = gameFishY + gameFishYVel * 0.5
+   gameFishY = math.clamp(gameFishY, 0, 1)
    -- cursor
    local isClicking = viewer:isSneaking() or viewer:isSwingingArm() and viewer:getSwingTime() <= 4
-   gameCursorVel = gameCursorVel * 0.95 + (isClicking and 1 or -1) * 0.01
+   gameCursorVel = gameCursorVel * 0.85 + (isClicking and 1 or -1) * 0.01
    gameCursorY = gameCursorY + gameCursorVel
    for _ = 1, 2 do
       gameCursorY = 1 - gameCursorY
@@ -326,9 +357,7 @@ function mode.tick(init)
       end
    end
    -- cursor check
-   local cursorMin = gameCursorY * (1 - gameCursorSize)
-   local cursorMax = cursorMin + gameCursorSize
-   if cursorMin < gameFishY + 0.04 and cursorMax > gameFishY - 0.04 then
+   if isCursorToucingFish() then
       gameProgressVel = math.lerp(gameProgressVel, 1, 0.6)
    else
       gameProgressVel = math.lerp(gameProgressVel, -0.8, 0.3)

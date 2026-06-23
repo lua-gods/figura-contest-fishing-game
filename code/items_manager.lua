@@ -8,24 +8,34 @@ local extraItems = {
    ["stick"] = "minecraft:stick",
    ["bowl"] = "minecraft:bowl",
    ["string"] = "minecraft:string",
+   ["fishing rod"] = "",
 }
 
 local fallbackIcon = models.fish.fallback_icon
 fallbackIcon:remove()
 
-local fishedItems = {}
+local fishedItems = {"fishing rod"}
 local fishedItemsMap = {}
 mod.fishedItems = fishedItems
 
 local extraModels = {}
 local availableExtraItems = {}
+
+extraModels["fishing rod"] = models.rod.fishing_rod_icon:remove()
+
 for name, item in pairs(extraItems) do
    table.insert(availableExtraItems, name)
-   local model = models:newPart(""):remove()
-   extraModels[name] = model
-   model:newItem("")
-      :setItem(item)
-      :setScale(1, 1, 0.001)
+   if not extraModels[name] then
+      local model = models:newPart(""):remove()
+      extraModels[name] = model
+      model:newItem("")
+         :setItem(item)
+         :setScale(1, 1, 0.001)
+   end
+end
+
+for _, v in pairs(fishedItems) do
+   fishedItemsMap[v] = true
 end
 
 ---@param str string
