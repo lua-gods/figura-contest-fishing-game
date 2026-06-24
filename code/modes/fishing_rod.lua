@@ -19,6 +19,7 @@ local fishingGameScale = 0.12
 local bobberModel = models.rod.fishing_bobber
 bobberModel:moveTo(worldModel)
 bobberModel:setVisible(false)
+bobberModel.bobber_uv:setPrimaryRenderType("CUTOUT_CULL")
 
 local stringModel = bobberModel.bobber_string
 
@@ -229,6 +230,17 @@ function mode.render(delta, block, item, entity, ctx)
    bobberVisibleFrame = avatarFrame + 10
    local bobberPos2 = math.lerp(bobberOldPos, bobberPos, delta) * 16
    bobberModel:setPos(bobberPos2)
+   bobberModel.bobber_uv:setUVPixels(0, 0)
+   if worldRenderedUsingItemFrame > avatarFrame then
+      local pos = bobberPos2 / 16 + vec(0, 0.25, 0)
+      local endPos = pos - vec(0, 0.5, 0)
+      local block, hitPos = raycast:block(pos, endPos, "COLLIDER", "WATER")
+      hitPos = hitPos or endPos
+      local dist = (pos - hitPos):length() * 16
+      dist = math.clamp(8 - dist, 0, 8)
+      local isWater = block and utils.isWater(block)
+      bobberModel.bobber_uv:setUVPixels(isWater and 8 or 0, dist)
+   end
    local isLeft = utils.contextToLeftHanded[ctx]
    local pos
    if utils.isFirstPersonContext[ctx] then

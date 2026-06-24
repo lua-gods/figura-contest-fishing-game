@@ -10,6 +10,8 @@ viewerClicked = false
 
 viewerGotBook = false
 
+worldRenderedUsingItemFrame = -10 -- item frame as in item and avatar frame
+
 events.WORLD_TICK:register(function()
    avatarTick = avatarTick + 1
 end)

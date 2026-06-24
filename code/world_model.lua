@@ -43,7 +43,6 @@ local facingToRot = {
    west = 12,
 }
 
-local _ = models:newPart("", "WORLD") -- f3 bounding box
 events.SKULL_RENDER:register(function(delta, block, item, entity, ctx)
    skullModel:visible(false)
    if renderUsingSkull then
@@ -68,6 +67,7 @@ events.SKULL_RENDER:register(function(delta, block, item, entity, ctx)
          end
          if canRenderUsingSkull and isOffHand == (avatarFrame <= offHandLastFrame) then
             canRenderUsingSkull = false
+            worldRenderedUsingItemFrame = avatarFrame + 2
             skullModel:setPos(utils.firstPersonCenterItemOffsets[ctx])
             :rot()
             skullModel:visible(true)
