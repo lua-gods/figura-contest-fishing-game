@@ -16,16 +16,16 @@ uvFlipMat:scale(-1, 1, 1)
 
 local syllablesData = {
    {text = "ba", hasVowel = true },
+   {text = "bu", hasVowel = true },
    {text = "le", hasVowel = true },
+   {text = "la", hasVowel = true },
    {text = "vi", hasVowel = true },
    {text = "ng", hasVowel = false},
    {text = "sh", hasVowel = false},
    {text = "pa", hasVowel = true },
+   {text = "ki", hasVowel = true },
+   {text = "xu", hasVowel = false },
 }
-local syllablesLookup = {}
-for i, v in ipairs(syllablesData) do
-   syllablesLookup[v.text] = v
-end
 
 local namePrefixes = {
    {value = "", weight = 35},
@@ -36,18 +36,35 @@ local default0Mt = {
    __index = function() return 0 end
 }
 
-local extraFish = {
-   [3] = {
-      {value = "", weight = 150},
-      {value = "labubu", weight = 1}
-   }
-}
+local extraFish = {}
 
 local fishStyles = {
    {name = "fish", style = {0, 1, 2, 4, 5}},
    {name = "octopus", style = {6}},
    {name = "pufferfish", style = {3}},
 }
+
+local customFishStyles = {
+   papa = {
+      styles = {fish = 5},
+      colors = {"#c8e4bf", "#a8c4af", "#efffd0"},
+      layers = 3,
+   },
+   baba = {
+      styles = {
+         fish = 2,
+      },
+      colors = {"#ffffff", "#D9396A", "#D9396A"},
+      layers = 3,
+   },
+   labubu = {
+      styles = {
+         fish = 0,
+      },
+      colors = {"#ffcba6", "#97e9ff", "#86cbed"}
+   }
+}
+
 local fishStylesLookup = {}
 local fishSuffixesWeights = {}
 
@@ -68,7 +85,7 @@ function mod.makeFishName(seed)
    name = name..utils.weightedRandom(namePrefixes, utils.seededRand(seed + 1))
    suffix = " "..utils.weightedRandom(fishSuffixesWeights, utils.seededRand(seed + 4))
 
-   local syllablesCount = utils.seededRandInt(seed + 2, utils.seededRandInt(seed + 3, 4) + 2) + 1
+   local syllablesCount = utils.seededRandInt(seed + 2, utils.seededRandInt(seed + 3, 2) + 2) + 1
    if extraFish[syllablesCount] then
       local customName = utils.weightedRandom(extraFish[syllablesCount], utils.seededRand(seed + 5))
       if customName ~= "" then
@@ -169,6 +186,18 @@ function mod.generateFishModel(rawFishName)
 
    local colors = generateColors(-seed, hue, hueStrength, fishName, fishStyle)
 
+   if customFishStyles[fishName] then
+      local customStyle = customFishStyles[fishName]
+      fishStyle = customStyle.styles and customStyle.styles[suffix] or fishStyle
+      if customStyle.colors then
+         local v = customStyle.colors
+         colors[1] = v[1] and vectors.hexToRGB(v[1]) or colors[1]
+         colors[2] = v[2] and vectors.hexToRGB(v[2]) or colors[2]
+         colors[3] = v[3] and vectors.hexToRGB(v[3]) or colors[3]
+      end
+      layerCount = customStyle.layers or layerCount
+   end
+
    for i = 0, layerCount do
       local layerY = i - 1
       local k = i
@@ -242,19 +271,20 @@ end
 for x = 0, 5 do
    for y = 0, 3 do
       local fishName = mod.makeFishName()
-      models:newPart("", "Hud")
+      fishName = "labubu fish"
 
-      :setLight(15, 15)
-      :setScale(3, 3)
-      :setPos(vec(-10, -10, 0) * 3 - vec(x * 60, y * 80, 0))
-      :addChild(mod.generateFishModel(fishName)[4])--:setPos(-16, -16))
-      :newText("a")
-      :setText(fishName)
-      :setPos(8, -10)
-      :setScale(0.25)
-      :wrap(true)
-      :width(64)
-      :setOutline(true)
+      models:newPart("", "Hud")
+         :setLight(15, 15)
+         :setScale(3, 3)
+         :setPos(vec(-10, -10, 0) * 3 - vec(x * 60, y * 80, 0))
+         :addChild(mod.generateFishModel(fishName)[4])--:setPos(-16, -16))
+         :newText("a")
+         :setText(fishName)
+         :setPos(8, -10)
+         :setScale(0.25)
+         :wrap(true)
+         :width(64)
+         :setOutline(true)
    end
 end
 --]=]
