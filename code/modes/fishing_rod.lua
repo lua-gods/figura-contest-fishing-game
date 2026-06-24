@@ -252,7 +252,7 @@ function mode.tick(init)
    if not bobberVisible then
       return
    end
-   --[ [-- debug
+   --[[-- debug
    if not fishingGame then
       startFishingGame()
       -- gameProgress = 2
@@ -296,7 +296,7 @@ function mode.tick(init)
       sounds:playSound("minecraft:entity.generic.splash", bobberPos, 0.1, 0.4)
    end
    if not fishingGame then
-      if bobberInWater and fishingTimer > 120 and math.random() > 0.99 then
+      if bobberInWater and fishingTimer > 120 and math.random() > (0.99 - (fishingTimer - 120) * 0.005) then
          bobberVel = bobberVel - vec(0, 0.15, 0)
          fishCatchTick = avatarTick + 20
          fishingTimer = 60
