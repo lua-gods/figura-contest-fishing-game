@@ -252,7 +252,7 @@ function mode.tick(init)
    if not bobberVisible then
       return
    end
-   --[[-- debug
+   --[ [-- debug
    if not fishingGame then
       startFishingGame()
       -- gameProgress = 2
@@ -260,7 +260,7 @@ function mode.tick(init)
    --]]
    bobberOldPos = bobberPos
    local viewer = client.getViewer()
-   if (viewer:getPos() - bobberPos):length() > 24 then
+   if (viewer:getPos() - bobberPos):length() > (fishingGame and 32 or 24) then
       bobberVisibleFrame = -10
       return
    end
@@ -311,12 +311,15 @@ function mode.tick(init)
    -- win or lose
    if gameEndDelay >= 1 then
       gameEndDelay = gameEndDelay + 1
-      if gameEndDelay >= 20 then
+      if gameEndDelay >= 10 then
          bobberVisibleFrame = -10
          bobberVisibleFrame = -10
          sounds:playSound("minecraft:entity.fishing_bobber.retrieve", viewer:getPos(), 1, 0.8 + math.random() * 0.4)
          if gameProgress > 0.5 then
             giveFish()
+            sounds:playSound("minecraft:entity.arrow.hit_player", viewer:getPos(), 1, 1)
+         else
+            sounds:playSound("minecraft:entity.fish.swim", viewer:getPos(), 0.8 + math.random() * 0.2, 0.6 + math.random() * 0.8)
          end
       end
       return
@@ -326,7 +329,7 @@ function mode.tick(init)
       sounds:playSound("minecraft:entity.fishing_bobber.retrieve", bobberPos, 0.1, 0.1 + math.random() * 0.2)
    end
    -- fish
-   if math.random() > (isCursorToucingFish() and 0.7 or 0.95) then
+   if math.random() > (isCursorToucingFish() and 0.62 or 0.9) then
       local offset = (math.random() - 0.5) * 2
       offset = math.sign(offset) * offset ^ 2
       if math.random() > 0.9 then
@@ -346,13 +349,13 @@ function mode.tick(init)
    gameFishY = math.clamp(gameFishY, 0, 1)
    -- cursor
    local isClicking = viewer:isSneaking() or viewer:isSwingingArm() and viewer:getSwingTime() <= 4
-   gameCursorVel = gameCursorVel * 0.85 + (isClicking and 1 or -1) * 0.01
+   gameCursorVel = gameCursorVel * 0.88 + (isClicking and 1 or -1) * 0.01
    gameCursorY = gameCursorY + gameCursorVel
    for _ = 1, 2 do
       gameCursorY = 1 - gameCursorY
       gameCursorVel = -gameCursorVel
       if gameCursorY < 0 then
-         gameCursorVel = isClicking and 0 or math.abs(gameCursorVel) * 0.8
+         gameCursorVel = isClicking and 0 or math.abs(gameCursorVel)
          gameCursorY = 0
       end
    end

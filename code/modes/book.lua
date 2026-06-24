@@ -26,10 +26,14 @@ infoTextTask:setAlignment("CENTER")
    :setScale(0.1)
    :setOutline(true)
 
-local newCurrentPage = 0
-local oldCurrentPage = 0
 local targetPage = 0
+local newCurrentPage = targetPage
+local oldCurrentPage = targetPage
 local loadedPages = {}
+local wasBookClosed = true
+local bookOpenFrame = -10
+
+local pageSound = math.round(targetPage)
 
 local itemsCount = -1
 
@@ -103,29 +107,28 @@ function mode.render(delta, block, item, entity, ctx)
    if not utils.isHoldingItemContext[ctx] then
       return
    end
-   if type(entity) ~= "PlayerAPI" then
+   local viewer = client.getViewer()
+   if viewer:getUUID() ~= entity:getUUID() then
       return
    end
-   local viewer = client.getViewer()
-   local leftHanded = entity:isLeftHanded()
+   local leftHanded = viewer:isLeftHanded()
    local bookClosed = leftHanded == isLeft
-   if viewer:getUUID() == entity:getUUID() then
-      infoTextTask:setVisible(true)
-      infoTextTask:setText(toJson{
-         "Press ",
-         {text = keybindHelper.getVanillaKey("key.swapOffhand"), color = "aqua"},
-         " to ",
-         bookClosed and "open" or "close"
-      })
-      if bookClosed then
-         infoTextTask:rot(90, 0, 0):pos(0, 1, 7)
-      else
-         infoTextTask:rot(90, 0, 90):pos(0, 0.7, -5)
-      end
+   infoTextTask:setVisible(true)
+   infoTextTask:setText(toJson{
+      "Press ",
+      {text = keybindHelper.getVanillaKey("key.swapOffhand"), color = "aqua"},
+      " to ",
+      bookClosed and "open" or "close"
+   })
+   if bookClosed then
+      infoTextTask:rot(90, 0, 0):pos(0, 1, 7)
+   else
+      infoTextTask:rot(90, 0, 90):pos(0, 0.7, -5)
    end
    if bookClosed then
       return
    end
+   bookOpenFrame = avatarFrame + 2
    local mat, firstPerson = customItemHelper.getCustomGuiMatrix(ctx)
    mat = mat * (firstPerson and bookGuiMatFirst or bookGuiMatThird)
    modeModel:setMatrix(mat)
@@ -134,6 +137,12 @@ function mode.render(delta, block, item, entity, ctx)
    if viewerClicked then
       targetPage = targetPage + (viewer:isSneaking() and -1 or 1)
       targetPage = math.max(targetPage, 0)
+   end
+
+   local newPageSound = math.round(currentPage)
+   if newPageSound ~= pageSound then
+      pageSound = newPageSound
+      sounds:playSound("minecraft:item.book.page_turn", viewer:getPos())
    end
 
    modeModel.book:setRot(0, 0, -90)
@@ -174,5 +183,15 @@ function mode.tick(init)
    oldCurrentPage = newCurrentPage
    newCurrentPage = math.lerp(newCurrentPage, targetPage, 0.2)
 end
+
+table.insert(globalSkullRender, function()
+   local isClosed = avatarFrame > bookOpenFrame
+   if wasBookClosed ~= isClosed then
+      wasBookClosed = isClosed
+      if avatarFrame < bookOpenFrame + 10 then
+         sounds:playSound("minecraft:item.book.page_turn", client.getViewer():getPos())
+      end
+   end
+end)
 
 return mode
