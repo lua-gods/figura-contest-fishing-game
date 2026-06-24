@@ -1,8 +1,18 @@
 local mod = {}
 
+---@type {[Minecraft.keybind|string]: string}
 local nameFallback = {
-   ["key.mouse.left"] = "LMB",
-   ["key.mouse.right"] = "RMB",
+   ["key.mouse.left"] = "Left Mouse Button",
+   ["key.mouse.right"] = "Right Mouse Button",
+   ["key.keyboard.left.shift"] = "SHIFT",
+   ["key.keyboard.right.shift"] = "RSHIFT",
+   ["key.keyboard.left.control"] = "CTRL",
+   ["key.keyboard.right.control"] = "RCTRL",
+   ["key.keyboard.left.alt"] = "ALT",
+   ["key.keyboard.right.alt"] = "ALT",
+   ["key.keyboard.backspace"] = "BACKSPACE",
+   ["key.keyboard.backslash"] = "\\",
+   ["key.keyboard.slash"] = "/",
 }
 
 ---@param str Minecraft.keybind|string

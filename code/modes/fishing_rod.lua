@@ -3,6 +3,7 @@ local customItemHelper = require("code.custom_item_helper")
 local utils = require("code.utils")
 local itemsManager = require("code.items_manager")
 local fishLib = require("code.fish")
+local keybindHelper = require("code.keybind_helper")
 
 local mode = skullModes.newMode()
 
@@ -51,6 +52,37 @@ local gameFishYTarget = 0
 local fishingGameAnimNew = 0
 local fishingGameAnimOld = 0
 
+local tutorialText = 1
+local tutorialTexts = {
+   function()
+      return toJson{"Press ", {color = "aqua", text = keybindHelper.getVanillaKey("key.attack")}, " to cast\nfishing rod"}
+   end,
+   function()
+      if not (fishingGame and bobberVisibleFrame >= avatarFrame) then
+         return ""
+      end
+      return toJson{"Hold ", {color = "aqua", text = keybindHelper.getVanillaKey("key.sneak")}, " to move\nrectangle up"}
+   end,
+   function()
+      if viewerGotBook then
+         tutorialText = 4
+         return ""
+      end
+      if bobberVisibleFrame >= avatarFrame then
+         return ""
+      end
+      return toJson{"Rename player head to ", {color = "aqua", text = "book"}, " to get book\nyou can view all fished items there!"}
+   end,
+   function() return "" end, -- tutorial finished
+}
+
+local tutorialModel = model:newPart("")
+local tutorialTextTask = tutorialModel:newText("")
+tutorialTextTask:setOutline(true)
+   :setScale(0.125)
+   :pos(0, -12, 0)
+   :alignment("CENTER")
+
 bobberModel.preRender = function()
    if avatarFrame > bobberVisibleFrame then
       bobberModel:setVisible(false)
@@ -70,7 +102,7 @@ local function startFishingGame()
    gameEndDelay = 0
    gameFishYVel = 0
    gameFishYTarget = 0.8
-   if math.random() > 0.95 then
+   if math.random() > 0.95 and #itemsManager.fishedItems >= 3 then
       gameFishRandom = -1
    else
       gameFishRandom = math.random() ^ 2
@@ -107,6 +139,7 @@ end
 
 function mode.render(delta, block, item, entity, ctx)
    gameModel:setVisible(false)
+   tutorialModel:setVisible(false)
    local mat, modelType = customItemHelper.getMatrix(entity, ctx, 2)
 
    model.rod:setMatrix(mat)
@@ -147,6 +180,7 @@ function mode.render(delta, block, item, entity, ctx)
             end
          end
       else
+         if tutorialText == 1 then tutorialText = 2 end
          bobberVisibleFrame = avatarFrame + 10
          bobberPos = viewer:getPos():add(0, viewer:getEyeHeight())
          bobberOldPos = bobberPos
@@ -177,6 +211,17 @@ function mode.render(delta, block, item, entity, ctx)
       gameModel.game:setScale(1 - (1 - fishingGameAnim) ^ 3, 1, 1)
       gameModel:setVisible(true)
          :setMatrix(mat)
+   end
+   do
+      local mat, firstPerson = customItemHelper.getCustomGuiMatrix(ctx)
+      if firstPerson then
+         mat:translate(0, 0, 32)
+      else
+         mat:translate(0, 0, -8)
+      end
+      tutorialModel:setVisible(true)
+      tutorialModel:setMatrix(mat)
+      tutorialTextTask:setText(tutorialTexts[tutorialText]())
    end
    if bobberVisibleFrame <= avatarFrame then
       return
@@ -318,6 +363,9 @@ function mode.tick(init)
          if gameProgress > 0.5 then
             giveFish()
             sounds:playSound("minecraft:entity.arrow.hit_player", viewer:getPos(), 1, 1)
+            if tutorialText == 2 then
+               tutorialText = 3
+            end
          else
             sounds:playSound("minecraft:entity.fish.swim", viewer:getPos(), 0.8 + math.random() * 0.2, 0.6 + math.random() * 0.8)
          end

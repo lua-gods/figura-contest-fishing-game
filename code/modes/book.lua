@@ -104,11 +104,12 @@ function mode.render(delta, block, item, entity, ctx)
    modeModel:setPos(pos)
       :setRot(rot)
 
-   if not utils.isHoldingItemContext[ctx] then
+   local viewer = client.getViewer()
+   if not entity or viewer:getUUID() ~= entity:getUUID() then
       return
    end
-   local viewer = client.getViewer()
-   if viewer:getUUID() ~= entity:getUUID() then
+   viewerGotBook = true
+   if not utils.isHoldingItemContext[ctx] then
       return
    end
    local leftHanded = viewer:isLeftHanded()

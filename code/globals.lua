@@ -8,6 +8,8 @@ globalSkullRender = {}
 
 viewerClicked = false
 
+viewerGotBook = false
+
 events.WORLD_TICK:register(function()
    avatarTick = avatarTick + 1
 end)
