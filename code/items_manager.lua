@@ -23,8 +23,14 @@ local availableExtraItems = {}
 
 extraModels["fishing rod"] = models.rod.fishing_rod_icon:remove()
 
+for _, v in pairs(fishedItems) do
+   fishedItemsMap[v] = true
+end
+
 for name, item in pairs(extraItems) do
-   table.insert(availableExtraItems, name)
+   if not fishedItemsMap[name] then
+      table.insert(availableExtraItems, name)
+   end
    if not extraModels[name] then
       local model = models:newPart(""):remove()
       extraModels[name] = model
@@ -34,28 +40,27 @@ for name, item in pairs(extraItems) do
    end
 end
 
-for _, v in pairs(fishedItems) do
-   fishedItemsMap[v] = true
-end
-
 ---@param str string
+---@return boolean
 function mod.addItem(str)
    if not fishedItemsMap[str] then
       fishedItemsMap[str] = true
       table.insert(fishedItems, str)
+      return true
    end
+   return false
 end
 
----@return boolean
+---@return string?
 function mod.addRandomExtraItem()
    if #availableExtraItems == 0 then
-      return false
+      return
    end
    local i = math.random(#availableExtraItems)
    local n = availableExtraItems[i]
    table.remove(availableExtraItems, i)
    mod.addItem(n)
-   return true
+   return n
 end
 
 ---@param n number
@@ -64,10 +69,10 @@ function mod.getItem(n)
    return fishedItems[n]
 end
 
----@param n number
+---@param n number|string
 ---@return ModelPart
 function mod.getItemModel(n)
-   local str = fishedItems[n]
+   local str = type(n) == "string" and n or fishedItems[n]
    if not str then
       return fallbackIcon
    end

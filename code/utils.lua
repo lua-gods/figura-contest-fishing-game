@@ -104,4 +104,9 @@ function mod.skullCenterToWorldMat(delta)
    return mat
 end
 
+local dot2width = client.getTextWidth("..")
+function mod.getTextWidth(str)
+   return client.getTextWidth("."..str..".") - dot2width
+end
+
 return mod

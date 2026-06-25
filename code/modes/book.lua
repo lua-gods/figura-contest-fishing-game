@@ -25,6 +25,7 @@ local infoTextTask = modeModel.book:newText("info")
 infoTextTask:setAlignment("CENTER")
    :setScale(0.1)
    :setOutline(true)
+   :setLight(15, 15)
 
 local targetPage = 0
 local newCurrentPage = targetPage
@@ -37,12 +38,19 @@ local pageSound = math.round(targetPage)
 
 local itemsCount = -1
 
+local lastPageFrame = -1
+local emptyModel = models:newPart(""):remove()
+
 ---@param n number
 ---@return ModelPart
 local function getPage(n)
    if loadedPages[n] then
       return loadedPages[n]
    end
+   if lastPageFrame == avatarFrame then
+      return emptyModel
+   end
+   lastPageFrame = avatarFrame
    local pageModel = modeModel.book.pagesOpen.pages:newPart("")
 
    pageModel:setPos(2, 4, 3)

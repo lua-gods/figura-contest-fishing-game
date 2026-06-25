@@ -83,6 +83,11 @@ tutorialTextTask:setOutline(true)
    :setScale(0.125)
    :pos(0, -12, 0)
    :alignment("CENTER")
+   :setLight(15, 15)
+
+local catchInfoTime = -90
+local catchInfoMainModel = model:newPart("")
+local catchInfoModel = catchInfoMainModel:newPart("")
 
 bobberModel.preRender = function()
    if avatarFrame > bobberVisibleFrame then
@@ -110,10 +115,54 @@ local function startFishingGame()
    end
 end
 
+---@param item string
+---@param new boolean
+local function updateCatchInfoModel(item, new)
+   catchInfoTime = avatarTick + 2
+
+   catchInfoModel:remove()
+   catchInfoModel = catchInfoMainModel:newPart("")
+
+   local icon = itemsManager.getItemModel(item)
+   local text1 = new and "Catched new " or "Catched "
+   local text2 = item.."!"
+   local scale = 0.2
+   local y = 0.9
+
+   local text1Width = utils.getTextWidth(text1) * scale
+   local text2Width = utils.getTextWidth(text2) * scale
+
+
+   catchInfoModel:newText("a")
+      :setText(text1)
+      :setLight(15, 15)
+      :setOutline(true)
+      :setScale(scale)
+      :setPos(0, y, 0)
+
+      catchInfoModel:newPart("")
+      :addChild(icon)
+      :setPos(-text1Width - 2, -0.6 + y, 0)
+      :scale(0.75)
+      :setScale(scale)
+
+      catchInfoModel:newText("b")
+      :setText(text2)
+      :setPos(-text1Width - 4.5, y, 0)
+      :setLight(15, 15)
+      :setOutline(true)
+      :setScale(scale)
+
+   local fullWidth = text1Width + text2Width + 4.2
+   catchInfoModel:setScale(0.2)
+      :setPos(fullWidth * 0.5, 12, 0)
+end
+
 local function giveFish()
    if gameFishRandom == -1 then
-      local ok = itemsManager.addRandomExtraItem()
-      if ok then
+      local item = itemsManager.addRandomExtraItem()
+      if item then
+         updateCatchInfoModel(item, true)
          return
       end
       gameFishRandom = 0
@@ -135,12 +184,14 @@ local function giveFish()
 
    seed = utils.seededRand(seed)
    local fishName = fishLib.makeFishName(seed)
-   itemsManager.addItem(fishName)
+   local new = itemsManager.addItem(fishName)
+   updateCatchInfoModel(fishName, new)
 end
 
 function mode.render(delta, block, item, entity, ctx)
    gameModel:setVisible(false)
    tutorialModel:setVisible(false)
+   catchInfoMainModel:setVisible(false)
    local mat, modelType = customItemHelper.getMatrix(entity, ctx, 2)
 
    model.rod:setMatrix(mat)
@@ -223,6 +274,22 @@ function mode.render(delta, block, item, entity, ctx)
       tutorialModel:setVisible(true)
       tutorialModel:setMatrix(mat)
       tutorialTextTask:setText(tutorialTexts[tutorialText]())
+   end
+   local catchInfoAnim = (avatarTick + delta - catchInfoTime) / 60
+   if catchInfoAnim < 1 then
+      catchInfoAnim = math.max(catchInfoAnim, 0)
+      local s = (1 - math.abs(1 - 2 * catchInfoAnim)) * 5
+      s = math.clamp(s, 0, 1)
+      s = 1 - (1 - s) ^ 3
+      local mat, firstPerson = customItemHelper.getCustomGuiMatrix(ctx)
+      if firstPerson then
+         mat:translate(0, 0, 32)
+      else
+         mat:translate(0, 0, -8)
+      end
+      catchInfoMainModel:setVisible(true)
+         :setMatrix(mat)
+      catchInfoModel:scale(1, s, 1)
    end
    if bobberVisibleFrame <= avatarFrame then
       return
@@ -312,7 +379,7 @@ function mode.tick(init)
    --[[-- debug
    if not fishingGame then
       startFishingGame()
-      -- gameProgress = 2
+      gameProgress = 2
    end
    --]]
    bobberOldPos = bobberPos
