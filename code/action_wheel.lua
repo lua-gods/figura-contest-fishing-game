@@ -110,18 +110,23 @@ function events.tick()
    end
    hadPermissions = hasPermissions
    for i, action in ipairs(actions) do
-      local text = {"Give "..items[i]}
+      local text = {
+         "",
+         {text = items[i], bold = true},
+         "\n\n",
+         "Click to give item"
+      }
       if not hasPermissions then
          text = {
             text,
-            hasPermissions and "" or "\n\n",
-            hasPermissions and "" or {color = "red", text = "Requires creative mode!"},
+            "\n",
+            {color = "red", text = "Requires creative mode!"},
          }
       end
       text = {
          text,
          "\n",
-         {text = "------------", color = "gray"},
+         {text = "-----< or >-----", color = "gray"},
          "\n",
          getItemHelpText,
          actionNeedsRename[i] and {
