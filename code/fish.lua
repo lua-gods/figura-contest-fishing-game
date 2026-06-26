@@ -42,6 +42,7 @@ local fishStyles = {
    {name = "fish", style = {0, 1, 2, 4, 5}},
    {name = "octopus", style = {6}},
    {name = "pufferfish", style = {3}},
+   {name = "crab", style = {7}},
 }
 
 local customFishStyles = {
@@ -271,7 +272,6 @@ end
 for x = 0, 5 do
    for y = 0, 3 do
       local fishName = mod.makeFishName()
-      fishName = "labubu fish"
 
       models:newPart("", "Hud")
          :setLight(15, 15)
