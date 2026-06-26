@@ -137,6 +137,11 @@ function mode.render(delta, block, item, entity, ctx)
    if bookClosed then
       return
    end
+   if avatarFrame > bookOpenFrame + 5 then
+      oldCurrentPage = 0
+      newCurrentPage = 0
+      targetPage = 0
+   end
    bookOpenFrame = avatarFrame + 2
    local mat, firstPerson = customItemHelper.getCustomGuiMatrix(ctx)
    mat = mat * (firstPerson and bookGuiMatFirst or bookGuiMatThird)
