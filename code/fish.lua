@@ -255,7 +255,7 @@ end
 ---@param name string
 ---@return ModelPart
 function mod.getFishModel(name)
-   return cache.get(name, newFishModelTempData)
+   return cache.get("fish;"..name, newFishModelTempData, name)
 end
 
 ---@param name string

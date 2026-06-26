@@ -1,6 +1,7 @@
 local fishingRodMode = require("code.modes.fishing_rod")
 local bookMode = require("code.modes.book")
 local fishMode = require("code.modes.fish")
+local aquariumMode = require("code.modes.aquarium")
 
 local fishLib = require("code.fish")
 
@@ -17,7 +18,7 @@ events.SKULL_RENDER:register(function(delta, block, item, entity, ctx)
       end
    end
    if block or not item then
-      return bookMode:setMode(delta, block, item, entity, ctx)
+      return aquariumMode:setMode(delta, block, item, entity, ctx)
    end
    local itemName = item:getName()
    local itemNameLower = itemName:lower()

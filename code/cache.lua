@@ -7,18 +7,21 @@ local emptyFunc = function() end
 ---@generic value
 ---@param name string
 ---@param func fun(name: string): value, function?
+---@param initValue any
 ---@return value
-function mod.get(name, func)
+function mod.get(name, func, initValue)
    if tempData[name] then
       tempData[name][1] = avatarTick
       return tempData[name][2]
    end
-   local v, callback = func(name)
-   tempData[name] = {
-      avatarTick,
-      v,
-      callback or emptyFunc
-   }
+   local v, callback = func(initValue)
+   if v then
+      tempData[name] = {
+         avatarTick,
+         v,
+         callback or emptyFunc
+      }
+   end
    return v
 end
 
@@ -40,6 +43,13 @@ function events.world_tick()
    if value and value[1] < avatarTick - 100 then
       value[3]()
       tempData[lastIndex] = nil
+   end
+end
+
+function events.tick()
+   local a = 0
+   for _ in pairs(tempData) do
+      a = a + 1
    end
 end
 
