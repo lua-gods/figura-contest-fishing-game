@@ -15,6 +15,8 @@ Swing your arm (left click by default) to cast fishing rod
 
 You can also rename head to `Book` to see all fished items, if you are host they will be kept between avatar reloads
 
+And you can place it as block to get aquarium
+
 This avatar should work under `Default` permission level but moving avatar to higher level is still recommended (just in case)
 
 ## download
