@@ -8,6 +8,25 @@ fishSprite:remove()
 fishSpriteFlip:remove()
 fishSpriteOutline:remove()
 
+local fishSprite3d = models:newPart(""):remove()
+do
+   fishSprite3d:setPrimaryRenderType("TRANSLUCENT_CULL")
+   local layerXModel = models.fish.fish_layer3d_x
+   local layerYModel = models.fish.fish_layer3d_y
+   layerXModel:remove()
+   layerYModel:remove()
+   for i = 0, 15 do
+      local layerX = layerXModel:copy("")
+      local layerY = layerYModel:copy("")
+      layerX:setPos(i, 0, 0):setUVPixels(-i, 0)
+      layerY:setPos(0, -i, 0):setUVPixels(0, i)
+      fishSprite3d:addChild(layerX)
+      fishSprite3d:addChild(layerY)
+   end
+end
+
+local fishTextureSize = textures["fish"]:getDimensions()
+
 local mod = {}
 
 local uvFlipMat = matrices.mat3()
@@ -205,6 +224,8 @@ function mod.generateFishModel(rawFishName)
       layerCount = customStyle.layers or layerCount
    end
 
+   local model3d = models:newPart(""):remove()
+
    for i = 0, layerCount do
       local layerY = i - 1
       local k = i
@@ -233,6 +254,14 @@ function mod.generateFishModel(rawFishName)
          outline:setPos(0, 0, 0.006)
             :setUVPixels(uv + vec(0, 32))
       end
+      if i <= 1 then
+         local model3dsides = fishSprite3d:copy("")
+         model3dsides:setColor(color)
+         -- setUVPixels applies setUV to children when its group
+         -- so setUV is needed instead
+         model3dsides:setUV(uv / fishTextureSize)
+         model3d:addChild(model3dsides)
+      end
    end
 
    local mainOutline = fishSpriteOutline:copy("")
@@ -243,8 +272,8 @@ function mod.generateFishModel(rawFishName)
    local hudModel = model:copy("")
    hudModel:setPrimaryRenderType("CUTOUT_EMISSIVE_SOLID")
 
-   local model3d = models:newPart(""):remove()
-   model3d:addChild(model)
+   model3d:addChild(model:copy(""):setPos(0, 0, 0.01))
+   modelFlip:setPos(0, 0, -0.01)
    model3d:addChild(modelFlip)
 
    modelOutline:addChild(model)
