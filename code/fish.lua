@@ -69,6 +69,7 @@ local customFishStyles = {
    papa = {
       styles = {fish = 5},
       colors = {"#c8e4bf", "#a8c4af", "#efffd0"},
+      goldenColors = {"#ffdaad", "#ffc2a1", "#ffefd0"},
       layers = 3,
    },
    baba = {
@@ -76,13 +77,15 @@ local customFishStyles = {
          fish = 2,
       },
       colors = {"#ffffff", "#D9396A", "#D9396A"},
+      goldenColors = {"#ffffff", "#EDE285", "#EDE285"},
       layers = 3,
    },
    labubu = {
       styles = {
          fish = 0,
       },
-      colors = {"#ffcba6", "#97e9ff", "#86cbed"}
+      colors = {"#ffcba6", "#97e9ff", "#86cbed"},
+      goldenColors = {"#ffcba6", "#ffd466", "#f2a74b"},
    }
 }
 
@@ -190,11 +193,13 @@ function mod.generateFishModel(rawFishName)
    suffix = suffix or "fish"
    local hue = 0
    local hueStrength = 0
+   local isGolden = false
 
    if fishName:sub(1, 7) == "golden " then
       fishName = fishName:sub(8, -1)
       hue = 0.11
       hueStrength = 0.98
+      isGolden = true
    end
 
    local model = models:newPart(""):remove()
@@ -215,11 +220,11 @@ function mod.generateFishModel(rawFishName)
    if customFishStyles[fishName] then
       local customStyle = customFishStyles[fishName]
       fishStyle = customStyle.styles and customStyle.styles[suffix] or fishStyle
-      if customStyle.colors then
-         local v = customStyle.colors
-         colors[1] = v[1] and vectors.hexToRGB(v[1]) or colors[1]
-         colors[2] = v[2] and vectors.hexToRGB(v[2]) or colors[2]
-         colors[3] = v[3] and vectors.hexToRGB(v[3]) or colors[3]
+      local newColors = isGolden and customStyle.goldenColors or customStyle.colors
+      if newColors then
+         colors[1] = newColors[1] and vectors.hexToRGB(newColors[1]) or colors[1]
+         colors[2] = newColors[2] and vectors.hexToRGB(newColors[2]) or colors[2]
+         colors[3] = newColors[3] and vectors.hexToRGB(newColors[3]) or colors[3]
       end
       layerCount = customStyle.layers or layerCount
    end
