@@ -46,11 +46,4 @@ function events.world_tick()
    end
 end
 
-function events.tick()
-   local a = 0
-   for _ in pairs(tempData) do
-      a = a + 1
-   end
-end
-
 return mod
