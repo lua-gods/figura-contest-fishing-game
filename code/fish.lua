@@ -43,6 +43,7 @@ local fishStyles = {
    {name = "octopus", style = {6}},
    {name = "pufferfish", style = {3}},
    {name = "crab", style = {7}},
+   {name = "starfish", style = {8}},
 }
 
 local customFishStyles = {
@@ -115,6 +116,11 @@ local fishStylesColors = {
       local rand = utils.seededRand(seed + 9)
       colors[2] = math.lerp(colors[1], vec(1, 1, 1), rand * 0.5) --[[@as Vector3]]
    end,
+   [8] = function(colors, seed)
+      local rand = utils.seededRand(seed + 9)
+      colors[2] = math.lerp(colors[1], vec(1, 1, 1), rand * 0.6 + 0.2) --[[@as Vector3]]
+      colors[3] = colors[2]
+   end
 }
 
 ---@param seed number
