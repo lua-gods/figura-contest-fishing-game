@@ -1,7 +1,7 @@
 # Figura fishing game
 Fishing game in figura with a lot of fish
 
-Once uploaded others can play it too!
+Once uploaded others can play it too
 
 To start get your player head
 ```
