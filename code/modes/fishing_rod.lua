@@ -314,7 +314,7 @@ function mode.render(delta, block, item, entity, ctx)
       local mat = utils.skullCenterToWorldMat(delta)
       local mat2 = mat:inverted()
 
-      local offset = vec(0.5, 13.5, 1)
+      local offset = vec(-1.5, 14.5, 5)
       if isLeft then
          offset.x = -offset.x
       end
