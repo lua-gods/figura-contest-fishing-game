@@ -18,6 +18,24 @@ local fishedItems = {"fishing rod"}
 local fishedItemsMap = {}
 mod.fishedItems = fishedItems
 
+if host:isHost() then
+   local myItems = config:load("items")
+   if type(myItems) == "table" then
+      for i = 1, #myItems do
+         local v = myItems[i]
+         if type(v) == "string" and fishedItems[i] ~= myItems[i] then
+            table.insert(fishedItems, v)
+         end
+      end
+   end
+end
+
+local function saveFishedItems()
+   if host:isHost() then
+      config:save("items", fishedItems)
+   end
+end
+
 local extraModels = {}
 local availableExtraItems = {}
 
@@ -46,6 +64,7 @@ function mod.addItem(str)
    if not fishedItemsMap[str] then
       fishedItemsMap[str] = true
       table.insert(fishedItems, str)
+      saveFishedItems()
       return true
    end
    return false
