@@ -124,7 +124,7 @@ local function updateCatchInfoModel(item, new)
    catchInfoModel = catchInfoMainModel:newPart("")
 
    local icon = itemsManager.getItemModel(item)
-   local text1 = new and "Catched new " or "Catched "
+   local text1 = new and "Caught new " or "Caught "
    local text2 = item.."!"
    local scale = 0.2
    local y = 0.9
