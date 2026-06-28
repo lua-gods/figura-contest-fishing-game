@@ -26,6 +26,8 @@ local stringModel = bobberModel.bobber_string
 local gameModel = model.game_main
 gameModel:setPrimaryRenderType("EMISSIVE_SOLID")
 
+local stringFirstPersonFrame = -10
+
 local bobberVisibleFrame = -10
 local bobberPos = vec(0, 0, 0)
 local bobberOldPos = vec(0, 0, 0)
@@ -222,6 +224,7 @@ function mode.render(delta, block, item, entity, ctx)
       end
    end
    if viewerClicked then
+      viewerClicked = false
       if bobberVisibleFrame > avatarFrame then
          if not fishingGame then
             if fishCatchTick > avatarTick then
@@ -311,6 +314,7 @@ function mode.render(delta, block, item, entity, ctx)
    local isLeft = utils.contextToLeftHanded[ctx]
    local pos
    if utils.isFirstPersonContext[ctx] then
+      stringFirstPersonFrame = avatarFrame + 2
       local mat = utils.skullCenterToWorldMat(delta)
       local mat2 = mat:inverted()
 
@@ -319,7 +323,7 @@ function mode.render(delta, block, item, entity, ctx)
          offset.x = -offset.x
       end
       pos = mat2:apply(-utils.firstPersonCenterItemOffsets[ctx] + offset)
-   elseif utils.isThirdPersonContext[ctx] then
+   elseif utils.isThirdPersonContext[ctx] and avatarFrame > stringFirstPersonFrame then
       pos = viewer:getPos(delta) * 16
       local offset = vec(-5, 14, 15)
       if isLeft then
@@ -337,7 +341,7 @@ function mode.render(delta, block, item, entity, ctx)
       stringModel:setVisible(true)
          :setRot(pitch, yaw, 0)
          :setScale(1, pos:length(), 1)
-   else
+   elseif avatarFrame > stringFirstPersonFrame then
       stringModel:setVisible(false)
    end
 end

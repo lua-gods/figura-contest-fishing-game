@@ -149,6 +149,7 @@ function mode.render(delta, block, item, entity, ctx)
 
    local currentPage = math.lerp(oldCurrentPage, newCurrentPage, delta)
    if viewerClicked then
+      viewerClicked = false
       targetPage = targetPage + (viewer:isSneaking() and -1 or 1)
       targetPage = math.max(targetPage, 0)
    end
